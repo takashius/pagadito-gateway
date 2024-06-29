@@ -4,8 +4,8 @@
 
 define("GATEWAY_URL", "https://sandbox-api.pagadito.com/v1/");
 /* Copy from Technical Configuration -> Integration Parameters */
-define("KEY_UID", "10c761376d75ed5f70e6652bbe987856");
-define("KEY_WSK", "3e6f661af746a20050c23659857dea29");
+define("KEY_UID", "TEST");
+define("KEY_WSK", "TEST");
 // require_once __DIR__ . '/lib/class.pagadito.php';
 require_once('lib/class.pagadito.php');
 
