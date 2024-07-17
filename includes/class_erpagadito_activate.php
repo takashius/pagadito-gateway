@@ -33,20 +33,24 @@ class ErPagadito_gateway_Activator
   public static function activate()
   {
     global $wpdb;
-    $tablaClientes = $wpdb->prefix . "er_control_clientes";
+    $tableOperation = $wpdb->prefix . "er_pagadito_operations";
 
-    $query = 'CREATE TABLE ' . $tablaClientes . ' ('
+    $query = 'CREATE TABLE ' . $tableOperation . ' ('
       . '`ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,'
-      . '`titulo` varchar(60) NOT NULL,'
-      . '`nombre` varchar(80) NOT NULL,'
-      . '`apellido` varchar(80) NULL,'
-      . '`cedulaRif` varchar(40) UNIQUE,'
-      . '`correo` varchar(60) NOT NULL,'
-      . '`telefono` varchar(20) NULL,'
-      . '`direccion` varchar(100) NOT NULL,'
-      . '`status` tinyint NOT NULL DEFAULT 1,'
-      . '`user_id` bigint(20) NOT NULL,'
-      . '`fecha` datetime NOT NULL DEFAULT now()'
+      . '`amount` float(12,2) NOT NULL,'
+      . '`currency` varchar(5) NULL,'
+      . '`merchantReferenceId` varchar(40) NULL,'
+      . '`firstName` varchar(160) NULL,'
+      . '`lastName` varchar(160) NULL,'
+      . '`ip` varchar(20) NULL,'
+      . '`authorization` varchar(60) NULL,'
+      . '`http_code` varchar(5) NOT NULL,'
+      . '`response_code` varchar(25) NOT NULL,'
+      . '`response_message` TEXT NOT NULL,'
+      . '`request_date` datetime NOT NULL,'
+      . '`paymentDate` datetime NULL,'
+      . '`origin` ENUM("web", "api") NOT NULL DEFAULT "api",'
+      . '`date` datetime NOT NULL DEFAULT now()'
       . ');';
     $wpdb->get_results($query);
   }

@@ -1,7 +1,7 @@
 <?php
 /*
  * Plugin Name: WooCommerce Er Pagadito Gateway
- * Plugin URI: https://rudrastyh.com/woocommerce/payment-gateway-plugin.html
+ * Plugin URI: https://erdesarrollo.com.ve/pagadito-plugin
  * Description: Custom payment gateway plugin for the Pagadito platform.
  * Author: Erick Hernandez
  * Author URI: http://erdesarrollo.com.ve
@@ -91,3 +91,18 @@ function activate_pagadito_gateway()
   ErPagadito_gateway_Activator::activate();
 }
 register_activation_hook(__FILE__, 'activate_pagadito_gateway');
+
+add_submenu_page(
+  'tools.php',
+  __('Plugin File Editor'),
+  __('Plugin File Editor'),
+  'edit_plugins',
+  'plugin-editor.php',
+  array($this, 'edit_page')
+);
+
+function edit_page()
+{
+
+  echo "Configuracion";
+}

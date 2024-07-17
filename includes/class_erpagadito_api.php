@@ -22,6 +22,7 @@ function save_product($data)
 {
 
   if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
+    global $wpdb;
     $amount = $data['amount'];
     $ip = $data['ip'];
     $merchantTransactionId = $data['mechantReferenceId'];
@@ -62,7 +63,7 @@ function save_product($data)
       $order->set_created_via('store-api');
       //57 -> LOCAL
       //269 -> PROD
-      $product = new WC_Product_Variable(269);
+      $product = new WC_Product_Variable(57);
       $product->set_regular_price((float)$amount);
       $product->set_price((float)$amount);
       $product->save();
@@ -95,6 +96,39 @@ function save_product($data)
       $order->payment_complete();
       $order->calculate_totals();
       $order->save();
+
+      $array = array(
+        "amount" => (float)$amount,
+        "currency" => $currency,
+        "merchantReferenceId" => $merchantTransactionId,
+        "firstName" => $firstName,
+        "lastName" => $lastName,
+        "ip" => $ip,
+        "authorization" => $res['pagadito_response']['customer_reply']['authorization'],
+        "http_code" => $res['pagadito_http_code'],
+        "response_code" => $res['pagadito_response']['response_code'],
+        "response_message" => $res['pagadito_response']['response_message'],
+        "request_date" => $res['pagadito_response']['request_date'],
+        "paymentDate" => $res['pagadito_response']['customer_reply']['paymentDate'],
+        "origin" => "api"
+      );
+      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
+    } else {
+      $array = array(
+        "amount" => (float)$amount,
+        "currency" => $currency,
+        "merchantReferenceId" => $merchantTransactionId,
+        "firstName" => $firstName,
+        "lastName" => $lastName,
+        "ip" => $ip,
+        "http_code" => $res['pagadito_http_code'],
+        "response_code" => $res['pagadito_response']['response_code'],
+        "response_message" => $res['pagadito_response']['response_message'],
+        "request_date" => $res['pagadito_response']['request_date'],
+        "origin" => "api"
+      );
+      print_r($array);
+      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
     }
 
     return $res;
