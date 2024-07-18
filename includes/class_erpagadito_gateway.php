@@ -183,6 +183,7 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   {
     @ini_set('display_errors', 1);
     global $woocommerce;
+    global $wpdb;
     $order = new WC_Order($order_id);
 
     $amount = $order->get_total();
@@ -224,6 +225,21 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
 
     if ($res['pagadito_http_code'] !== 200) {
       wc_add_notice($res['pagadito_response']['response_code'] . " " . $res['pagadito_response']['response_message'], 'error');
+      $array = array(
+        "amount" => (float)$amount,
+        "currency" => $currency,
+        "merchantReferenceId" => $order_id,
+        "firstName" => $firstName,
+        "lastName" => $lastName,
+        "ip" => $ip,
+        "http_code" => $res['pagadito_http_code'],
+        "response_code" => $res['pagadito_response']['response_code'],
+        "response_message" => $res['pagadito_response']['response_message'],
+        "request_date" => $res['pagadito_response']['request_date'],
+        "origin" => "web"
+      );
+      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
+
       return array(
         'result' => 'error'
       );
@@ -236,8 +252,22 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
       $order->calculate_totals();
       $order->save();
 
-      // $email_new_order = WC()->mailer()->get_emails()['WC_Email_New_Order'];
-      // $email_new_order->trigger($order_id);
+      $array = array(
+        "amount" => (float)$amount,
+        "currency" => $currency,
+        "merchantReferenceId" => $order_id,
+        "firstName" => $firstName,
+        "lastName" => $lastName,
+        "ip" => $ip,
+        "authorization" => $res['pagadito_response']['customer_reply']['authorization'],
+        "http_code" => $res['pagadito_http_code'],
+        "response_code" => $res['pagadito_response']['response_code'],
+        "response_message" => $res['pagadito_response']['response_message'],
+        "request_date" => $res['pagadito_response']['request_date'],
+        "paymentDate" => $res['pagadito_response']['customer_reply']['paymentDate'],
+        "origin" => "web"
+      );
+      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
 
       // Remove cart
       $woocommerce->cart->empty_cart();

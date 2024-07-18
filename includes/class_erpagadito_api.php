@@ -10,12 +10,53 @@
  * @subpackage ErPagadito_gateway/includes
  */
 
+
+add_action('rest_api_init', function () {
+  register_rest_route('pagadito/v1', '/transactions', array(
+    'methods' => 'GET',
+    'callback' => 'get_transactions',
+  ));
+});
+
 add_action('rest_api_init', function () {
   register_rest_route('pagadito/v1', '/cobro', array(
     'methods' => 'POST',
     'callback' => 'save_product',
   ));
 });
+
+function get_transactions($data)
+{
+  global $wpdb;
+  $tablaOperations = $wpdb->prefix . "er_pagadito_operations";
+  $where = "";
+
+  if ($data['date_to'] && $data['date_from']) {
+    $date_to = $data['date_to'];
+    $date_from = $data['date_from'];
+    $where .= " `date` >= '" . $date_to . "' AND `date` <= '" . $date_from . "'";
+  }
+
+  if ($data['origin']) {
+    $origin = $data['origin'];
+    if ($where !== '') $where .= " AND";
+    $where .= " `origin` = '" . $origin . "'";
+  }
+
+  if ($data['http_code']) {
+    $http_code = $data['http_code'];
+    if ($where !== '') $where .= " AND";
+    $where .= " `http_code` = '" . $http_code . "'";
+  }
+
+  $sql = "SELECT * FROM `" . $tablaOperations . "`";
+  if ($where !== '') {
+    $sql .= " WHERE " . $where;
+  }
+  $query = $wpdb->prepare($sql);
+  $result = $wpdb->get_results($query);
+  return $result;
+}
 
 
 function save_product($data)
@@ -25,7 +66,7 @@ function save_product($data)
     global $wpdb;
     $amount = $data['amount'];
     $ip = $data['ip'];
-    $merchantTransactionId = $data['mechantReferenceId'];
+    $merchantTransactionId = $data['merchantReferenceId'];
     $currency = $data['currency'];
     $firstName = $data['firstName'];
     $lastName = $data['lastName'];
@@ -56,6 +97,11 @@ function save_product($data)
         ),
       ),
     );
+
+    $validateData = validateRequest($data);
+    if (count($validateData) > 0) {
+      return array("pagadito_http_code" => 400, "pagadito_response" => $validateData);
+    }
 
     require_once __DIR__ . '/pagadito-call.php';
     if ($res['pagadito_http_code'] === 200) {
@@ -127,7 +173,6 @@ function save_product($data)
         "request_date" => $res['pagadito_response']['request_date'],
         "origin" => "api"
       );
-      print_r($array);
       $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
     }
 
@@ -135,4 +180,71 @@ function save_product($data)
   } else {
     echo 'WooCommerce no está activo. Asegúrate de activarlo para proceder.';
   }
+}
+
+function validateRequest($data)
+{
+  $messages = array();
+  if (!is_numeric($data['cardNumber']) || strlen($data['cardNumber']) != 16) {
+    $messages['cardNumber'] = 'El número de tarjeta es inválido.';
+  }
+  if (!is_numeric($data['expiryMonth']) || strlen($data['expiryMonth']) != 2) {
+    $messages['expiryMonth'] = 'El formato de mes es inválido.';
+  }
+  if (!is_numeric($data['expiryYear']) || strlen($data['expiryYear']) != 4) {
+    $messages['expiryYear'] = 'El formato de año es inválido.';
+  }
+  if (!is_numeric($data['cvv']) || strlen($data['cvv']) != 3) {
+    $messages['cvv'] = 'El código de seguridad de la tarjeta es inválido.';
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .'-]{1,26}$/", $data['holderName'])) {
+    $messages['holderName'] = 'El nombre es invalido, maximo 26 caracteres y se permiten solo letras y los sguientes caracteres especiales: Punto ( . ), Guión ( - ), Apóstrofe ( ’ ) y Comilla simple ( \' ).';
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .'´]{1,30}$/", $data['firstName'])) {
+    $messages['firstName'] = 'El nombre es invalido, maximo 30 caracteres y se permiten solo Punto ( . ) y Apóstrofe ( ’ )';
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .'´]{1,30}$/", $data['lastName'])) {
+    $messages['lastName'] = 'El apellido es invalido, maximo 30 caracteres y se permiten solo Punto ( . ) y Apóstrofe ( ’ )';
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .'´]{1,30}$/", $data['city'])) {
+    $messages['city'] = 'La ciudad es invalida, maximo 30 caracteres y se permiten solo Punto ( . ) y Apóstrofe ( ’ )';
+  }
+  if (strlen($data['email']) > 60) {
+    $messages['email'] = "El correo no puede tener más de 60 caracteres.";
+  }
+  if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+    $messages['email'] = "El correo no es válido.";
+  }
+  if (strlen($data['state']) > 80) {
+    $messages['state'] = "El estado no puede tener más de 80 caracteres.";
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .’()-]*$/", $data['state'])) {
+    $messages['state'] = "El estado contiene caracteres no permitidos. Se permiten solo Paréntesis ( ), Guión ( - ), Punto ( . ) y Apóstrofe ( ’ )";
+  }
+  if (strlen($data['postalCode']) > 15) {
+    $messages['postalCode'] = "El código postal no puede tener más de 15 caracteres.";
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .-]*$/", $data['postalCode'])) {
+    $messages['postalCode'] = "El código postal contiene caracteres no permitidos. Se permiten solo Punto ( . ) y Guión ( - )";
+  }
+  if (strlen($data['address']) > 60) {
+    $messages['address'] = "La dirección no puede tener más de 60 caracteres.";
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .,#;°&*-]*$/", $data['address'])) {
+    $messages['address'] = "La dirección contiene caracteres no permitidos. Se permiten solo Punto ( . ), Coma ( , ), Numeral ( # ), Punto y coma ( ; ), Guión ( - ), Símbolo de grado ( ° ), Ampersand ( & ) y Asterísco ( * )";
+  }
+  if (strlen($data['phone']) > 15) {
+    $messages['phone'] = "El telefono no puede tener más de 15 caracteres.";
+  }
+  if (!preg_match("/^[a-zA-Z0-9 ()+*-]*$/", $data['phone'])) {
+    $messages['phone'] = "El telefono contiene caracteres no permitidos. Se permiten solo Paréntesis ( ), Signo Más ( + ), Guión ( - ) y Asterísco ( * )";
+  }
+  if (strlen($data['merchantReferenceId']) > 100) {
+    $messages['merchantReferenceId'] = "La referencia no puede tener más de 100 caracteres.";
+  }
+  if (!preg_match("/^[a-zA-Z0-9 .-]*$/", $data['merchantReferenceId'])) {
+    $messages['merchantReferenceId'] = "El string contiene caracteres no permitidos. Se permiten solo Punto ( . ) y Guión ( - )";
+  }
+
+  return $messages;
 }
