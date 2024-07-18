@@ -4,7 +4,7 @@
  * Payment gateway main class
  *
  * @link       https://erdesarrollo.com.ve
- * @since      1.0.1
+ * @since      1.2.1
  *
  * @package    ErPagadito_gateway
  * @subpackage ErPagadito_gateway/includes
@@ -15,7 +15,7 @@
  *
  * This class initializes the methods necessary to display the payment gateway.
  *
- * @since      1.0.1
+ * @since      1.2.1
  * @package    ErPagadito_gateway
  * @subpackage ErPagadito_gateway/includes
  * @author     Erick Hernandez <erick@erdesarrollo.com.ve>
