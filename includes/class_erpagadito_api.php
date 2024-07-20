@@ -245,6 +245,9 @@ function validateRequest($data)
   if (!preg_match("/^[a-zA-Z0-9 .-]*$/", $data['mechantReferenceId'])) {
     $messages['merchantReferenceId'] = "El string contiene caracteres no permitidos. Se permiten solo Punto ( . ) y Guión ( - )";
   }
+  if (!is_numeric($data['country']) || strlen((string)$data['country']) > 3) {
+    $messages['country'] = "Utilice los códigos de país de tres números que se encuentran en el Listado de Códigos ISO 3166 para Países.";
+  }
 
   return $messages;
 }
