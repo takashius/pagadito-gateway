@@ -66,7 +66,7 @@ function save_product($data)
     global $wpdb;
     $amount = $data['amount'];
     $ip = $data['ip'];
-    $merchantTransactionId = $data['merchantReferenceId'];
+    $merchantTransactionId = $data['mechantReferenceId'];
     $currency = $data['currency'];
     $firstName = $data['firstName'];
     $lastName = $data['lastName'];
@@ -239,10 +239,10 @@ function validateRequest($data)
   if (!preg_match("/^[a-zA-Z0-9 ()+*-]*$/", $data['phone'])) {
     $messages['phone'] = "El telefono contiene caracteres no permitidos. Se permiten solo Paréntesis ( ), Signo Más ( + ), Guión ( - ) y Asterísco ( * )";
   }
-  if (strlen($data['merchantReferenceId']) > 100) {
+  if (strlen($data['mechantReferenceId']) > 100) {
     $messages['merchantReferenceId'] = "La referencia no puede tener más de 100 caracteres.";
   }
-  if (!preg_match("/^[a-zA-Z0-9 .-]*$/", $data['merchantReferenceId'])) {
+  if (!preg_match("/^[a-zA-Z0-9 .-]*$/", $data['mechantReferenceId'])) {
     $messages['merchantReferenceId'] = "El string contiene caracteres no permitidos. Se permiten solo Punto ( . ) y Guión ( - )";
   }
 
