@@ -70,6 +70,7 @@ function save_product($data)
     $currency = $data['currency'];
     $firstName = $data['firstName'];
     $lastName = $data['lastName'];
+    $data['holderName'] = validateHolderName($data['holderName']);
     $holderName = $data['holderName'];
     $email = $data['email'];
     $phone = $data['phone'];
@@ -109,7 +110,7 @@ function save_product($data)
       $order->set_created_via('store-api');
       //57 -> LOCAL
       //269 -> PROD
-      $product = new WC_Product_Variable(57);
+      $product = new WC_Product_Variable(269);
       $product->set_regular_price((float)$amount);
       $product->set_price((float)$amount);
       $product->save();
@@ -250,4 +251,30 @@ function validateRequest($data)
   }
 
   return $messages;
+}
+
+function validateHolderName($name)
+{
+  $name = eliminarAcentos($name);
+  $parts = explode(' ', $name);
+
+  if (strlen($name) > 26) {
+    if (count($parts) === 4) {
+      array_pop($parts);
+    } else if (count($parts) === 3) {
+      unset($parts[1]);
+      $parts = array_values($parts);
+    }
+  }
+
+  return implode(' ', $parts);
+}
+
+function eliminarAcentos($string)
+{
+  $acentos = array(
+    'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+    'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U'
+  );
+  return strtr($string, $acentos);
 }
