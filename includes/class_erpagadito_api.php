@@ -108,7 +108,7 @@ function save_product($data)
     if ($res['pagadito_http_code'] === 200) {
       $order = wc_create_order();
       $order->set_created_via('store-api');
-      //57 -> LOCAL
+      //269 -> LOCAL
       //269 -> PROD
       $product = new WC_Product_Variable(269);
       $product->set_regular_price((float)$amount);
