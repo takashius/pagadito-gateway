@@ -249,6 +249,11 @@ function validateRequest($data)
   if (!is_numeric($data['country']) || strlen((string)$data['country']) > 3) {
     $messages['country'] = "Utilice los códigos de país de tres números que se encuentran en el Listado de Códigos ISO 3166 para Países.";
   }
+  if (validarCodigoPais($data['country'])) {
+    $codigo = $data['country'];
+    $messages['country'] = "El código $codigo de pais no esta soportado actualmente.";
+  }
+
 
   return $messages;
 }
@@ -277,4 +282,14 @@ function eliminarAcentos($string)
     'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U'
   );
   return strtr($string, $acentos);
+}
+
+function validarCodigoPais($codigo)
+{
+  $codigosPais = [
+    "222", "320", "340", "558", "188", "591", "840", "218", "068", "600",
+    "858", "032", "152", "484", "724", "630", "250", "124", "380", "826",
+    "388", "060", "084", "534", "328", "740"
+  ];
+  return in_array($codigo, $codigosPais);
 }
