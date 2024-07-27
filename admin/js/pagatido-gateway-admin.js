@@ -175,44 +175,19 @@ $(document).ready(function () {
   $('body').on('click', '.page-link', function (e) {
     e.preventDefault();
     const page = $(this).data('page');
-    getTransactions(page);
+    if ($('#pattern').val() != $('#date_from').val()) {
+      const params = {
+        pattern: $('#pattern').val(),
+        date_from: $('#date_from').val(),
+        date_to: $('#date_to').val(),
+        origin: $('#origin').val(),
+        http_code: $('#http_response').val(),
+      }
+      getTransactions(page, params);
+    } else {
+      getTransactions(page);
+    }
   })
-
-  // const pagination = (totalPages, currentPage) => {
-  //   let paginationHtml = '';
-
-  //   if (currentPage > 1) {
-  //     paginationHtml += `<li class="page-item">
-  //       <a href="#" class="page-link" data-page="${currentPage - 1}">Anterior</a>
-  //     </li>`;
-  //   } else {
-  //     paginationHtml += `<li class="page-item disabled">
-  //       <a class="page-link" href="#" tabindex="-1">Anterior</a>
-  //     </li>`;
-  //   }
-
-  //   for (let i = 1; i <= totalPages; i++) {
-  //     if (i === currentPage) {
-  //       paginationHtml += `<li class="page-item active">
-  //         <a class="page-link" href="#">${i} <span class="sr-only">(current)</span></a>
-  //       </li>`;
-  //     } else {
-  //       paginationHtml += `<li class="page-item"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
-  //     }
-  //   }
-
-  //   if (currentPage < totalPages) {
-  //     paginationHtml += `<li class="page-item">
-  //       <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
-  //     </li>`;
-  //   } else {
-  //     paginationHtml += `<li class="page-item disabled">
-  //       <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
-  //     </li>`;
-  //   }
-
-  //   $('#pagination').html(paginationHtml);
-  // }
 
   const pagination = (totalPages, currentPage) => {
     let paginationHtml = '';
