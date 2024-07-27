@@ -57,6 +57,7 @@ $(document).ready(function () {
     const typeDownload = $(this).val();
 
     if (typeDownload === 'Excel') {
+      $('#loader_new-er-control').attr('style', 'visibility: visible;');
       data.action = 'excel_report';
       $.ajax({
         url: ajaxurl,
@@ -74,13 +75,16 @@ $(document).ready(function () {
           a.click();
           window.URL.revokeObjectURL(url);
           $('#download').val('Seleccione uno').trigger('change');
+          $('#loader_new-er-control').attr('style', 'visibility: hidden;');
         },
         error: function (xhr, status, error) {
           console.error('Error al generar el archivo CSV:', error);
           $('#download').val('Seleccione uno').trigger('change');
+          $('#loader_new-er-control').attr('style', 'visibility: hidden;');
         }
       });
     } else if (typeDownload === 'PDF') {
+      $('#loader_new-er-control').attr('style', 'visibility: visible;');
       data.action = 'pdf_report';
       $.ajax({
         url: ajaxurl,
@@ -98,10 +102,12 @@ $(document).ready(function () {
           a.click();
           window.URL.revokeObjectURL(url);
           $('#download').val('Seleccione uno').trigger('change');
+          $('#loader_new-er-control').attr('style', 'visibility: hidden;');
         },
         error: function (xhr, status, error) {
           console.error('Error al generar el archivo PDF:', error);
           $('#download').val('Seleccione uno').trigger('change');
+          $('#loader_new-er-control').attr('style', 'visibility: hidden;');
         }
       });
     }
