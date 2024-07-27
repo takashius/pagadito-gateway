@@ -41,7 +41,7 @@ function excel_report()
   $sheet = $spreadsheet->getActiveSheet();
   $items = [];
 
-  [$results, $total_results] = get_results(true);
+  [$results, $total_results] = get_results(false);
 
   $headers = [
     'Monto', 'Moneda', 'merchantReferenceId', 'Nombre', 'Apellido', 'IP',
@@ -119,7 +119,7 @@ function pdf_report()
   $sheet = $spreadsheet->getActiveSheet();
   $items = [];
 
-  [$results, $total_results] = get_results(true);
+  [$results, $total_results] = get_results(false);
 
   $headers = [
     'Monto', 'Moneda', 'Nombre', 'IP',

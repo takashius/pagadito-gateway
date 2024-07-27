@@ -178,40 +178,90 @@ $(document).ready(function () {
     getTransactions(page);
   })
 
+  // const pagination = (totalPages, currentPage) => {
+  //   let paginationHtml = '';
+
+  //   if (currentPage > 1) {
+  //     paginationHtml += `<li class="page-item">
+  //       <a href="#" class="page-link" data-page="${currentPage - 1}">Anterior</a>
+  //     </li>`;
+  //   } else {
+  //     paginationHtml += `<li class="page-item disabled">
+  //       <a class="page-link" href="#" tabindex="-1">Anterior</a>
+  //     </li>`;
+  //   }
+
+  //   for (let i = 1; i <= totalPages; i++) {
+  //     if (i === currentPage) {
+  //       paginationHtml += `<li class="page-item active">
+  //         <a class="page-link" href="#">${i} <span class="sr-only">(current)</span></a>
+  //       </li>`;
+  //     } else {
+  //       paginationHtml += `<li class="page-item"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+  //     }
+  //   }
+
+  //   if (currentPage < totalPages) {
+  //     paginationHtml += `<li class="page-item">
+  //       <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
+  //     </li>`;
+  //   } else {
+  //     paginationHtml += `<li class="page-item disabled">
+  //       <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
+  //     </li>`;
+  //   }
+
+  //   $('#pagination').html(paginationHtml);
+  // }
+
   const pagination = (totalPages, currentPage) => {
     let paginationHtml = '';
 
-    // Botón de página anterior
     if (currentPage > 1) {
       paginationHtml += `<li class="page-item">
-        <a href="#" class="page-link" data-page="${currentPage - 1}">Anterior</a>
-      </li>`;
+            <a href="#" class="page-link" data-page="${currentPage - 1}">Anterior</a>
+        </li>`;
     } else {
       paginationHtml += `<li class="page-item disabled">
-        <a class="page-link" href="#" tabindex="-1">Anterior</a>
-      </li>`;
+            <a class="page-link" href="#" tabindex="-1">Anterior</a>
+        </li>`;
     }
 
-    // Páginas numeradas
-    for (let i = 1; i <= totalPages; i++) {
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+      paginationHtml += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+      if (startPage > 2) {
+        paginationHtml += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
       if (i === currentPage) {
         paginationHtml += `<li class="page-item active">
-          <a class="page-link" href="#">${i} <span class="sr-only">(current)</span></a>
-        </li>`;
+                <a class="page-link" href="#">${i} <span class="sr-only">(current)</span></a>
+            </li>`;
       } else {
         paginationHtml += `<li class="page-item"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
       }
     }
 
-    // Botón de página siguiente
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        paginationHtml += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+      }
+      paginationHtml += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+    }
+
     if (currentPage < totalPages) {
       paginationHtml += `<li class="page-item">
-        <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
-      </li>`;
+            <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
+        </li>`;
     } else {
       paginationHtml += `<li class="page-item disabled">
-        <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
-      </li>`;
+            <a class="page-link" href="#" data-page="${currentPage + 1}">Siguiente</a>
+        </li>`;
     }
 
     $('#pagination').html(paginationHtml);
