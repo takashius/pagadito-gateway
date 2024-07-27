@@ -8,6 +8,8 @@
  * Version: 1.2.5
  */
 
+require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
+
 /*
  * This action hook registers our PHP class as a WooCommerce payment gateway
  */
@@ -91,3 +93,5 @@ function activate_pagadito_gateway()
   ErPagadito_gateway_Activator::activate();
 }
 register_activation_hook(__FILE__, 'activate_pagadito_gateway');
+
+require_once plugin_dir_path(__FILE__) . 'admin/pagadito-gateway-admin.php';
