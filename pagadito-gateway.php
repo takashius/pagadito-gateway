@@ -5,7 +5,7 @@
  * Description: Custom payment gateway plugin for the Pagadito platform.
  * Author: Erick Hernandez
  * Author URI: http://erdesarrollo.com.ve
- * Version: 1.2.5
+ * Version: 2.0.1
  */
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
