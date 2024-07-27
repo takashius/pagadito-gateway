@@ -46,7 +46,6 @@ $(document).ready(function () {
     };
 
     const data = {
-      action: 'generar_csv',
       date_from: params.date_from,
       date_to: params.date_to
     };
@@ -58,8 +57,9 @@ $(document).ready(function () {
     const typeDownload = $(this).val();
 
     if (typeDownload === 'Excel') {
+      data.action = 'excel_report';
       $.ajax({
-        url: ajaxurl, // URL de la acción AJAX en WordPress
+        url: ajaxurl,
         type: 'POST',
         data,
         xhrFields: {
@@ -73,9 +73,35 @@ $(document).ready(function () {
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
+          $('#download').val('Seleccione uno').trigger('change');
         },
         error: function (xhr, status, error) {
           console.error('Error al generar el archivo CSV:', error);
+          $('#download').val('Seleccione uno').trigger('change');
+        }
+      });
+    } else if (typeDownload === 'PDF') {
+      data.action = 'pdf_report';
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data,
+        xhrFields: {
+          responseType: 'blob'
+        },
+        success: function (data) {
+          var a = document.createElement('a');
+          var url = window.URL.createObjectURL(data);
+          a.href = url;
+          a.download = 'report.pdf';
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          $('#download').val('Seleccione uno').trigger('change');
+        },
+        error: function (xhr, status, error) {
+          console.error('Error al generar el archivo PDF:', error);
+          $('#download').val('Seleccione uno').trigger('change');
         }
       });
     }

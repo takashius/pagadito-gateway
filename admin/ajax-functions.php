@@ -15,6 +15,8 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Writer\Pdf\Dompdf;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
 add_action('wp_ajax_get_ajax_transactions', 'get_ajax_transactions');
 function get_ajax_transactions()
@@ -32,8 +34,8 @@ function get_ajax_transactions()
   wp_die();
 }
 
-add_action('wp_ajax_generar_csv', 'generar_csv');
-function generar_csv()
+add_action('wp_ajax_excel_report', 'excel_report');
+function excel_report()
 {
   $spreadsheet = new Spreadsheet();
   $sheet = $spreadsheet->getActiveSheet();
@@ -86,28 +88,97 @@ function generar_csv()
     'fill' => [
       'fillType' => Fill::FILL_SOLID,
       'startColor' => [
-        'argb' => Color::COLOR_BLUE // Color de fondo amarillo
+        'argb' => Color::COLOR_BLUE
       ]
     ],
     'font' => [
       'bold' => true,
       'color' => [
-        'argb' => Color::COLOR_WHITE // Color del texto blanco
+        'argb' => Color::COLOR_WHITE
       ]
     ]
   ];
   $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
 
-  // Crear el escritor de Excel
   $writer = new Xlsx($spreadsheet);
-  $filename = 'hello_world.xlsx';
+  $filename = 'excel_report.xlsx';
 
-  // Enviar encabezados para la descarga del archivo
   header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   header('Content-Disposition: attachment; filename="' . $filename . '"');
   header('Cache-Control: max-age=0');
 
-  // Guardar el archivo en la salida
+  $writer->save('php://output');
+  exit;
+}
+
+add_action('wp_ajax_pdf_report', 'pdf_report');
+function pdf_report()
+{
+
+  $spreadsheet = new Spreadsheet();
+  $sheet = $spreadsheet->getActiveSheet();
+  $items = [];
+
+  [$results, $total_results] = get_results(true);
+
+  $headers = [
+    'Monto', 'Moneda', 'Nombre', 'IP',
+    'Autorizacion', 'http_code', 'Mensaje de respuesta',
+    'Origen', 'Fecha'
+  ];
+  $sheet->fromArray($headers, NULL, 'A1');
+  foreach ($results as $result) {
+    $items[] = array(
+      $result->amount,
+      $result->currency,
+      $result->firstName . ' ' . $result->lastName,
+      $result->ip,
+      $result->authorization,
+      $result->http_code,
+      $result->response_message,
+      $result->origin,
+      $result->date
+    );
+  }
+  $sheet->fromArray($items, NULL, 'A2');
+
+  $sheet->getColumnDimension('A')->setWidth(5);
+  $sheet->getColumnDimension('B')->setWidth(6);
+  $sheet->getColumnDimension('C')->setWidth(20);
+  $sheet->getColumnDimension('D')->setWidth(12);
+  $sheet->getColumnDimension('E')->setWidth(10);
+  $sheet->getColumnDimension('F')->setWidth(8);
+  $sheet->getColumnDimension('G')->setWidth(40);
+  $sheet->getColumnDimension('H')->setWidth(10);
+  $sheet->getColumnDimension('I')->setWidth(20);
+
+  $headerStyle = [
+    'fill' => [
+      'fillType' => Fill::FILL_SOLID,
+      'startColor' => [
+        'argb' => Color::COLOR_BLUE
+      ]
+    ],
+    'font' => [
+      'bold' => true,
+      'color' => [
+        'argb' => Color::COLOR_WHITE
+      ]
+    ]
+  ];
+  $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
+  $sheet->getStyle('A1:I' . (count($results) + 1))->getFont()->setSize(8);
+  $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+  $sheet->getStyle('A1:I' . (count($results) + 1))->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+  $sheet->getStyle('A1:I' . (count($results) + 1))->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+  $sheet->getStyle('A1:I' . (count($results) + 1))->getAlignment()->setWrapText(true);
+
+  $writer = new Dompdf($spreadsheet);
+  $filename = 'pdf_report.pdf';
+  header('Content-Type: application/pdf');
+  header('Content-Disposition: attachment; filename="' . $filename . '"');
+  header('Cache-Control: max-age=0');
+
   $writer->save('php://output');
   exit;
 }
