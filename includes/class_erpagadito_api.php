@@ -249,10 +249,10 @@ function validateRequest($data)
   if (!is_numeric($data['country']) || strlen((string)$data['country']) > 3) {
     $messages['country'] = "Utilice los códigos de país de tres números que se encuentran en el Listado de Códigos ISO 3166 para Países.";
   }
-  if (validarCodigoPais($data['country'])) {
-    $codigo = $data['country'];
-    $messages['country'] = "El código $codigo de pais no esta soportado actualmente.";
-  }
+  // if (validarCodigoPais($data['country'])) {
+  //   $codigo = $data['country'];
+  //   $messages['country'] = "El código $codigo de pais no esta soportado actualmente.";
+  // }
 
 
   return $messages;
