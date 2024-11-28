@@ -148,9 +148,7 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   /*
     * Custom CSS and JS, in most cases required only when you decided to go with a custom credit card form
     */
-  public function payment_scripts()
-  {
-  }
+  public function payment_scripts() {}
 
   /*
      * Fields validation, more in Step 5
@@ -299,7 +297,5 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   /*
     * In case you need a webhook, like PayPal IPN etc
     */
-  public function webhook()
-  {
-  }
+  public function webhook() {}
 }

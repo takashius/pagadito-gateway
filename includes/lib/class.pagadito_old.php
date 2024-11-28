@@ -26,24 +26,14 @@ class Pagadito {
     
     public function createCustomer($params)
     {
+        
         return $this->callToAPI('customer', $params, "POST");
-    }
-
-    public function validateProcessCard($params)
-    {
-        return $this->callToAPI('validate-process-card', $params, "POST");
-    }
-
-    public function validateProcessByToken($params)
-    {
-        return $this->callToAPI('validate-process-by-token', $params, "POST");
     }
 
     public function sendPayment($params) {
         
         return $this->callToAPI('payment', $params, "POST");
     }
-
 
     public function createSubscription($params) {
         
@@ -64,14 +54,6 @@ class Pagadito {
         
         return $this->callToAPI('refund', $params, "POST");
     }
-    // --
-    public function setupPayer($params) {
-        return $this->callToAPI('setup-payer', $params, "POST");
-    }
-    
-    public function setupPayerByToken($params) {
-        return $this->callToAPI('setup-payer-by-token', $params, "POST");
-    }
 
     
     //**************************************************************************
@@ -81,6 +63,7 @@ class Pagadito {
     //**************************************************************************
     private function config()
     {
+        
         $this->key_uid = KEY_UID;
         $this->key_wsk = KEY_WSK;
         $this->url = GATEWAY_URL;
@@ -124,7 +107,6 @@ class Pagadito {
             'pagadito_http_code' => '',
             'pagadito_response' => '',
         );
-
         $request = $this->parseRequest($params);
         curl_setopt($this->curlObj, CURLOPT_URL, ($this->url . $resource));
         curl_setopt($this->curlObj, CURLOPT_USERPWD, $this->key_uid . ":" . $this->key_wsk);

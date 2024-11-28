@@ -10,6 +10,9 @@
  * @subpackage ErPagadito_gateway/includes
  */
 
+require_once __DIR__ . '/class/class-pagadito-handler.php';
+require_once __DIR__ . '/class/class-clients.php';
+require_once __DIR__ . '/validation.php';
 
 add_action('rest_api_init', function () {
   register_rest_route('pagadito/v1', '/transactions', array(
@@ -25,271 +28,248 @@ add_action('rest_api_init', function () {
   ));
 });
 
+add_action('rest_api_init', function () {
+  register_rest_route('pagadito/v1', '/clients', array(
+    'methods' => 'POST',
+    'callback' => 'create_client_endpoint',
+  ));
+  register_rest_route('pagadito/v1', '/clients/(?P<id>\d+)', array(
+    'methods' => 'PUT',
+    'callback' => 'update_client_endpoint',
+  ));
+  register_rest_route('pagadito/v1', '/clients/(?P<id>\d+)', array(
+    'methods' => 'GET',
+    'callback' => 'get_client_endpoint',
+  ));
+  register_rest_route('pagadito/v1', '/clients', array(
+    'methods' => 'GET',
+    'callback' => 'get_clients_endpoint',
+  ));
+  register_rest_route('pagadito/v1', '/clients/(?P<id>\d+)', array(
+    'methods' => 'DELETE',
+    'callback' => 'delete_client_endpoint',
+  ));
+  register_rest_route('pagadito/v1', '/clients/(?P<id>\d+)/regenerate_token/(?P<type>[\w]+)', array(
+    'methods' => 'POST',
+    'callback' => 'regenerate_token_endpoint',
+  ));
+});
+
 function get_transactions($data)
 {
+  // Validar el token
+  $token = $data->get_header('Authorization');
+  if (!$token) {
+    return new WP_REST_Response(array('message' => 'Token no proporcionado'), 401);
+  }
+
+  $token = str_replace('Bearer ', '', $token); // Eliminar el prefijo 'Bearer ' del token
+  $client_id = validate_jwt_token($token);
+  if (!$client_id) {
+    return new WP_REST_Response(array('message' => 'Token inválido o expirado'), 401);
+  }
+
+  $clients = new Clients();
+  $client = $clients->getClientById($client_id);
+
+  if (!$client) {
+    return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
+  }
+
+  // Determinar el entorno
+  $environment = ($token === $client->sandbox_token) ? 'sandbox' : 'production';
+
   global $wpdb;
   $tablaOperations = $wpdb->prefix . "er_pagadito_operations";
-  $where = "";
+  $where = "client_id = " . intval($client_id) . " AND environment = '" . esc_sql($environment) . "'";
 
   if ($data['date_to'] && $data['date_from']) {
     $date_to = $data['date_to'];
     $date_from = $data['date_from'];
-    $where .= " `date` >= '" . $date_to . "' AND `date` <= '" . $date_from . "'";
+    $where .= " AND `date` >= '" . esc_sql($date_from) . "' AND `date` <= '" . esc_sql($date_to) . "'";
   }
 
   if ($data['origin']) {
     $origin = $data['origin'];
-    if ($where !== '') $where .= " AND";
-    $where .= " `origin` = '" . $origin . "'";
+    $where .= " AND `origin` = '" . esc_sql($origin) . "'";
   }
 
   if ($data['http_code']) {
     $http_code = $data['http_code'];
-    if ($where !== '') $where .= " AND";
-    $where .= " `http_code` = '" . $http_code . "'";
+    $where .= " AND `http_code` = '" . esc_sql($http_code) . "'";
   }
 
-  $sql = "SELECT * FROM `" . $tablaOperations . "`";
-  if ($where !== '') {
-    $sql .= " WHERE " . $where;
-  }
-  $query = $wpdb->prepare($sql);
-  $result = $wpdb->get_results($query);
-  return $result;
+  $sql = "SELECT * FROM `" . $tablaOperations . "` WHERE " . $where;
+  $result = $wpdb->get_results($sql);
+
+  return new WP_REST_Response($result, 200);
 }
-
 
 function save_product($data)
 {
+  $token = $data->get_header('Authorization');
+  if (!$token) {
+    return new WP_REST_Response(array('message' => 'Token no proporcionado'), 401);
+  }
 
-  if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
-    global $wpdb;
-    $amount = $data['amount'];
-    $ip = $data['ip'];
-    $merchantTransactionId = $data['mechantReferenceId'];
-    $currency = $data['currency'];
-    $firstName = $data['firstName'];
-    $lastName = $data['lastName'];
-    $data['holderName'] = validateHolderName($data['holderName']);
-    $holderName = $data['holderName'];
-    $email = $data['email'];
-    $phone = $data['phone'];
-    $address_1 = $data['address'];
-    $address_2 = "";
-    $city = $data['city'];
-    $state = $data['state'];
-    $country = $data['country'];
-    $postalCode = $data['postalCode'];
+  $token = str_replace('Bearer ', '', $token);
+  $client_id = validate_jwt_token($token);
+  if (!$client_id) {
+    return new WP_REST_Response(array('message' => 'Token inválido o expirado'), 401);
+  }
 
-    $cardNumber = $data['cardNumber'];
-    $cvv = $data['cvv'];
-    $expiryMonth = $data['expiryMonth'];
-    $expiryYear = $data['expiryYear'];
+  $clients = new Clients();
+  $client = $clients->getClientById($client_id);
 
-    $transaction = array(
-      'merchantTransactionId' => $merchantTransactionId,
-      'currencyId' => $currency,
-      /* transactionDetails Object */
-      'transactionDetails' => array(
-        array(
-          'quantity' => '1',
-          'description' => 'Recarga',
-          'amount' => $amount,
-        ),
-      ),
-    );
+  if (!$client) {
+    return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
+  }
 
-    $validateData = validateRequest($data);
-    if (count($validateData) > 0) {
-      return array("pagadito_http_code" => 400, "pagadito_response" => $validateData);
-    }
+  $handler = new PagaditoHandler();
+  $params = $data->get_json_params();
+  $params['client_id'] = $client_id;
 
-    require_once __DIR__ . '/pagadito-call.php';
-    if ($res['pagadito_http_code'] === 200) {
-      $order = wc_create_order();
-      $order->set_created_via('store-api');
-      //269 -> LOCAL
-      //269 -> PROD
-      $product = new WC_Product_Variable(269);
-      $product->set_regular_price((float)$amount);
-      $product->set_price((float)$amount);
-      $product->save();
-
-      $quantity = 1;
-      $order->add_product($product, $quantity);
-
-      $order->set_billing_first_name($firstName);
-      $order->set_billing_last_name($lastName);
-      $order->set_billing_email($email);
-      $order->set_billing_phone($phone);
-      $order->set_billing_address_1($address_1);
-      $order->set_billing_address_2('');
-      $order->set_billing_city($city);
-      $order->set_billing_postcode($postalCode);
-      $order->set_billing_country($country);
-      // Si la dirección de envío es diferente a la de facturación, establece la dirección de envío aquí
-      $order->set_shipping_first_name($firstName);
-      $order->set_shipping_last_name($lastName);
-      $order->set_shipping_address_1($address_1);
-      $order->set_shipping_address_2('');
-      $order->set_shipping_city($city);
-      $order->set_shipping_postcode($postalCode);
-      $order->set_shipping_country($country);
-
-      $order->set_status('wc-completed', 'Order is created programmatically');
-      $order->add_meta_data('request_id', $res['pagadito_response']['request_id']);
-      $order->add_meta_data('authorization', $res['pagadito_response']['customer_reply']['authorization']);
-      $order->set_payment_method('er_pagadito');
-      $order->payment_complete();
-      $order->calculate_totals();
-      $order->save();
-
-      $array = array(
-        "amount" => (float)$amount,
-        "currency" => $currency,
-        "merchantReferenceId" => $merchantTransactionId,
-        "firstName" => $firstName,
-        "lastName" => $lastName,
-        "ip" => $ip,
-        "authorization" => $res['pagadito_response']['customer_reply']['authorization'],
-        "http_code" => $res['pagadito_http_code'],
-        "response_code" => $res['pagadito_response']['response_code'],
-        "response_message" => $res['pagadito_response']['response_message'],
-        "request_date" => $res['pagadito_response']['request_date'],
-        "paymentDate" => $res['pagadito_response']['customer_reply']['paymentDate'],
-        "origin" => "api"
-      );
-      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
-    } else {
-      $array = array(
-        "amount" => (float)$amount,
-        "currency" => $currency,
-        "merchantReferenceId" => $merchantTransactionId,
-        "firstName" => $firstName,
-        "lastName" => $lastName,
-        "ip" => $ip,
-        "http_code" => $res['pagadito_http_code'],
-        "response_code" => $res['pagadito_response']['response_code'],
-        "response_message" => $res['pagadito_response']['response_message'],
-        "request_date" => $res['pagadito_response']['request_date'],
-        "origin" => "api"
-      );
-      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
-    }
-
-    return $res;
+  // Verificar si el token es de sandbox
+  if ($token === $client->sandbox_token) {
+    $handler->setTestMode(true);
   } else {
-    echo 'WooCommerce no está activo. Asegúrate de activarlo para proceder.';
+    $handler->setTestMode(false);
+  }
+
+  $validateData = validateSaveProductRequest($params);
+  if (count($validateData) > 0) {
+    return new WP_REST_Response(
+      array(
+        "pagadito_http_code" => 400,
+        "pagadito_response" => $validateData
+      ),
+      400
+    );
+  }
+
+  $response = $handler->handleWooCommerce($params);
+  return new WP_REST_Response($response, 200);
+}
+
+function create_client_endpoint($data)
+{
+  $client_id = validate_authorization($data);
+  if ($client_id instanceof WP_REST_Response) {
+    return $client_id;
+  }
+
+  try {
+    $clients = new Clients();
+    $params = $data->get_json_params();
+    $result = $clients->createClient($params);
+    return new WP_REST_Response($result, 201);
+  } catch (Exception $e) {
+    return new WP_REST_Response(array('message' => 'Error al crear el cliente', 'error' => $e->getMessage()), 500);
   }
 }
 
-function validateRequest($data)
+function update_client_endpoint($data)
 {
-  $messages = array();
-  if (!is_numeric($data['cardNumber']) || strlen($data['cardNumber']) != 16) {
-    $messages['cardNumber'] = 'El número de tarjeta es inválido.';
+  $client_id = validate_authorization($data);
+  if ($client_id instanceof WP_REST_Response) {
+    return $client_id;
   }
-  if (!is_numeric($data['expiryMonth']) || strlen($data['expiryMonth']) != 2) {
-    $messages['expiryMonth'] = 'El formato de mes es inválido.';
-  }
-  if (!is_numeric($data['expiryYear']) || strlen($data['expiryYear']) != 4) {
-    $messages['expiryYear'] = 'El formato de año es inválido.';
-  }
-  if (!is_numeric($data['cvv']) || strlen($data['cvv']) != 3) {
-    $messages['cvv'] = 'El código de seguridad de la tarjeta es inválido.';
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .'-]{1,26}$/", $data['holderName'])) {
-    $messages['holderName'] = 'El nombre es invalido, maximo 26 caracteres y se permiten solo letras y los sguientes caracteres especiales: Punto ( . ), Guión ( - ), Apóstrofe ( ’ ) y Comilla simple ( \' ).';
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .'´]{1,30}$/", $data['firstName'])) {
-    $messages['firstName'] = 'El nombre es invalido, maximo 30 caracteres y se permiten solo Punto ( . ) y Apóstrofe ( ’ )';
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .'´]{1,30}$/", $data['lastName'])) {
-    $messages['lastName'] = 'El apellido es invalido, maximo 30 caracteres y se permiten solo Punto ( . ) y Apóstrofe ( ’ )';
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .'´]{1,30}$/", $data['city'])) {
-    $messages['city'] = 'La ciudad es invalida, maximo 30 caracteres y se permiten solo Punto ( . ) y Apóstrofe ( ’ )';
-  }
-  if (strlen($data['email']) > 60) {
-    $messages['email'] = "El correo no puede tener más de 60 caracteres.";
-  }
-  if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-    $messages['email'] = "El correo no es válido.";
-  }
-  if (strlen($data['state']) > 80) {
-    $messages['state'] = "El estado no puede tener más de 80 caracteres.";
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .’()-]*$/", $data['state'])) {
-    $messages['state'] = "El estado contiene caracteres no permitidos. Se permiten solo Paréntesis ( ), Guión ( - ), Punto ( . ) y Apóstrofe ( ’ )";
-  }
-  if (strlen($data['postalCode']) > 15) {
-    $messages['postalCode'] = "El código postal no puede tener más de 15 caracteres.";
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .-]*$/", $data['postalCode'])) {
-    $messages['postalCode'] = "El código postal contiene caracteres no permitidos. Se permiten solo Punto ( . ) y Guión ( - )";
-  }
-  if (strlen($data['address']) > 60) {
-    $messages['address'] = "La dirección no puede tener más de 60 caracteres.";
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .,#;°&*-]*$/", $data['address'])) {
-    $messages['address'] = "La dirección contiene caracteres no permitidos. Se permiten solo Punto ( . ), Coma ( , ), Numeral ( # ), Punto y coma ( ; ), Guión ( - ), Símbolo de grado ( ° ), Ampersand ( & ) y Asterísco ( * )";
-  }
-  if (strlen($data['phone']) > 15) {
-    $messages['phone'] = "El telefono no puede tener más de 15 caracteres.";
-  }
-  if (!preg_match("/^[a-zA-Z0-9 ()+*-]*$/", $data['phone'])) {
-    $messages['phone'] = "El telefono contiene caracteres no permitidos. Se permiten solo Paréntesis ( ), Signo Más ( + ), Guión ( - ) y Asterísco ( * )";
-  }
-  if (strlen($data['mechantReferenceId']) > 100) {
-    $messages['merchantReferenceId'] = "La referencia no puede tener más de 100 caracteres.";
-  }
-  if (!preg_match("/^[a-zA-Z0-9 .-]*$/", $data['mechantReferenceId'])) {
-    $messages['merchantReferenceId'] = "El string contiene caracteres no permitidos. Se permiten solo Punto ( . ) y Guión ( - )";
-  }
-  if (!is_numeric($data['country']) || strlen((string)$data['country']) > 3) {
-    $messages['country'] = "Utilice los códigos de país de tres números que se encuentran en el Listado de Códigos ISO 3166 para Países.";
-  }
-  // if (validarCodigoPais($data['country'])) {
-  //   $codigo = $data['country'];
-  //   $messages['country'] = "El código $codigo de pais no esta soportado actualmente.";
-  // }
 
-
-  return $messages;
+  try {
+    $clients = new Clients();
+    $params = $data->get_json_params();
+    $client_id = $data['id'];
+    $updated = $clients->updateClient($client_id, $params);
+    return new WP_REST_Response(array('updated' => $updated), 200);
+  } catch (Exception $e) {
+    return new WP_REST_Response(array('message' => 'Error al actualizar el cliente', 'error' => $e->getMessage()), 500);
+  }
 }
 
-function validateHolderName($name)
+function get_client_endpoint($data)
 {
-  $name = eliminarAcentos($name);
-  $parts = explode(' ', $name);
+  $client_id = validate_authorization($data);
+  if ($client_id instanceof WP_REST_Response) {
+    return $client_id;
+  }
 
-  if (strlen($name) > 26) {
-    if (count($parts) === 4) {
-      array_pop($parts);
-    } else if (count($parts) === 3) {
-      unset($parts[1]);
-      $parts = array_values($parts);
+  try {
+    $clients = new Clients();
+    $client_id = intval($data['id']);
+    $client = $clients->getClientById($client_id);
+
+    if (!$client) {
+      return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
     }
+
+    return new WP_REST_Response($client, 200);
+  } catch (Exception $e) {
+    return new WP_REST_Response(array('message' => 'Error al obtener el cliente', 'error' => $e->getMessage()), 500);
+  }
+}
+
+function get_clients_endpoint($data)
+{
+  $client_id = validate_authorization($data);
+  if ($client_id instanceof WP_REST_Response) {
+    return $client_id;
   }
 
-  return implode(' ', $parts);
+  try {
+    $clients = new Clients();
+    $page = isset($data['page']) ? intval($data['page']) : 1;
+    $per_page = isset($data['per_page']) ? intval($data['per_page']) : 10;
+
+    $client_list = $clients->getClients($page, $per_page);
+
+    return new WP_REST_Response($client_list, 200);
+  } catch (Exception $e) {
+    return new WP_REST_Response(array('message' => 'Error al obtener la lista de clientes', 'error' => $e->getMessage()), 500);
+  }
 }
 
-function eliminarAcentos($string)
+function delete_client_endpoint($data)
 {
-  $acentos = array(
-    'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
-    'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U'
-  );
-  return strtr($string, $acentos);
+  $client_id = validate_authorization($data);
+  if ($client_id instanceof WP_REST_Response) {
+    return $client_id;
+  }
+
+  try {
+    $clients = new Clients();
+    $client_id = intval($data['id']);
+    $deleted = $clients->deleteClient($client_id);
+
+    if ($deleted === 0) {
+      return new WP_REST_Response(array('message' => 'Cliente no encontrado o ya eliminado'), 404);
+    }
+
+    return new WP_REST_Response(array('message' => 'Cliente eliminado correctamente'), 200);
+  } catch (Exception $e) {
+    return new WP_REST_Response(array('message' => 'Error al eliminar el cliente', 'error' => $e->getMessage()), 500);
+  }
 }
 
-function validarCodigoPais($codigo)
+function regenerate_token_endpoint($data)
 {
-  $codigosPais = [
-    "222", "320", "340", "558", "188", "591", "840", "218", "068", "600",
-    "858", "032", "152", "484", "724", "630", "250", "124", "380", "826",
-    "388", "060", "084", "534", "328", "740"
-  ];
-  return in_array($codigo, $codigosPais);
+  $client_id = validate_authorization($data);
+  if ($client_id instanceof WP_REST_Response) {
+    return $client_id;
+  }
+
+  try {
+    $clients = new Clients();
+    $client_id = intval($data['id']);
+    $type = sanitize_text_field($data['type']);
+
+    if (!in_array($type, ['sandbox', 'production'])) {
+      return new WP_REST_Response(array('message' => 'Tipo de token inválido'), 400);
+    }
+
+    $new_token = $clients->regenerateToken($client_id, $type);
+
+    return new WP_REST_Response(array('new_token' => $new_token), 200);
+  } catch (Exception $e) {
+    return new WP_REST_Response(array('message' => 'Error al regenerar el token', 'error' => $e->getMessage()), 500);
+  }
 }

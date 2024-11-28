@@ -1,8 +1,8 @@
 <?php
-/* If your project is live, uncomment the following line, and comment the next one*/
-/* define("GATEWAY_URL", "https://api.pagadito.com/v1/"); */
+
 $gateway_options = get_option('woocommerce_' . 'er_pagadito_settings', array());
 $testmode = isset($gateway_options['testmode']) ? $gateway_options['testmode'] : 'yes';
+$testmode = 'yes';
 $test_publishable_key = isset($gateway_options['test_publishable_key']) ? $gateway_options['test_publishable_key'] : '';
 $test_private_key = isset($gateway_options['test_private_key']) ? $gateway_options['test_private_key'] : '';
 $publishable_key = isset($gateway_options['publishable_key']) ? $gateway_options['publishable_key'] : '';
@@ -55,6 +55,11 @@ $params = array(
     'deviceFingerprintID' => time(),
     'customerIp' => $ip,
   ),
+  'consumerAuthenticationInformation' => array(
+    'setup_request_id' => '01',
+    'referenceId' => '02',
+    "returnUrl" => "return.php"
+  )
 );
 // echo "KEY_UID = " . KEY_UID . "/n";
 // echo "KEY_WSK = " . KEY_WSK . "/n";

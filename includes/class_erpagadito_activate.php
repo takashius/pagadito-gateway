@@ -34,24 +34,45 @@ class ErPagadito_gateway_Activator
   {
     global $wpdb;
     $tableOperation = $wpdb->prefix . "er_pagadito_operations";
+    $tableClients = $wpdb->prefix . "er_pagadito_clients";
 
-    $query = 'CREATE TABLE ' . $tableOperation . ' ('
+    // Crear tabla de operaciones
+    $queryOperation = 'CREATE TABLE ' . $tableOperation . ' ('
       . '`ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,'
+      . '`client_id` bigint(20) unsigned NOT NULL,'
       . '`amount` float(12,2) NOT NULL,'
       . '`currency` varchar(5) NULL,'
       . '`merchantReferenceId` varchar(40) NULL,'
-      . '`firstName` varchar(160) NULL,'
-      . '`lastName` varchar(160) NULL,'
-      . '`ip` varchar(20) NULL,'
-      . '`authorization` varchar(60) NULL,'
+      . '`firstName` varchar(160) NOT NULL,'
+      . '`lastName` varchar(160) NOT NULL,'
+      . '`ip` varchar(20) NOT NULL,'
+      . '`authorization` varchar(60) NOT NULL,'
       . '`http_code` varchar(5) NOT NULL,'
       . '`response_code` varchar(25) NOT NULL,'
       . '`response_message` TEXT NOT NULL,'
       . '`request_date` datetime NOT NULL,'
       . '`paymentDate` datetime NULL,'
+      . '`environment` ENUM("production", "sandbox") NOT NULL,'
       . '`origin` ENUM("web", "api") NOT NULL DEFAULT "api",'
-      . '`date` datetime NOT NULL DEFAULT now()'
+      . '`date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP'
       . ');';
-    $wpdb->get_results($query);
+
+    // Crear tabla de clientes
+    $queryClients = 'CREATE TABLE ' . $tableClients . ' ('
+      . '`ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,'
+      . '`name` varchar(255) NOT NULL,'
+      . '`email` varchar(255) NOT NULL,'
+      . '`address` varchar(255) NOT NULL,'
+      . '`tax_id` varchar(255) NOT NULL,'
+      . '`sandbox_token` TEXT NOT NULL,'
+      . '`production_token` TEXT NOT NULL,'
+      . '`role` ENUM("admin", "user") NOT NULL DEFAULT "user",'
+      . '`created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+      . '`updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,'
+      . '`deleted` boolean NOT NULL DEFAULT 0'
+      . ');';
+
+    $wpdb->query($queryOperation);
+    $wpdb->query($queryClients);
   }
 }
