@@ -1,4 +1,5 @@
 $(document).ready(function () {
+  let client = false;
   $('.general').select2({
     theme: "bootstrap",
     minimumResultsForSearch: Infinity
@@ -118,11 +119,41 @@ $(document).ready(function () {
       pattern: $('#pattern').val(),
       date_from: $('#date_from').val(),
       date_to: $('#date_to').val(),
-      origin: $('#origin').val(),
+      customer: $('#customer').val(),
       http_code: $('#http_response').val(),
     }
     getTransactions(1, params);
   })
+
+  function fetchClients() {
+    const data = {
+      action: 'get_clients'
+    };
+
+    $('#loader_new-er-control').attr('style', 'visibility: visible;');
+
+    jQuery.post(ajaxurl, data, function (response) {
+      const selectCustomer = $('#customer');
+      response.forEach((client, index) => {
+        const option = $('<option></option>').attr('value', client.ID).text(client.name);
+        selectCustomer.append(option);
+        if (index === 0) { option.prop('selected', true); }
+      });
+      client = response[0].ID;
+
+      const params = {
+        pattern: "",
+        date_from: $('#date_from').val(),
+        date_to: $('#date_to').val(),
+        customer: client,
+        http_code: $('#http_response').val(),
+      }
+      getTransactions(1, params);
+    }).fail(function (e) {
+      $('#loader_new-er-control').attr('style', 'visibility: hidden;');
+      console.log('Error fetching clients:', e);
+    });
+  }
 
   const getTransactions = (page, search = null) => {
     $('#loader_new-er-control').attr('style', 'visibility: visible;');
@@ -132,10 +163,12 @@ $(document).ready(function () {
       results_per_page,
       page
     }
+
     if (search) {
       data.date_from = search.date_from;
       data.date_to = search.date_to;
       if (search.origin != 'Todos') data.origin = search.origin;
+      if (search.customer != 'Todos') data.customer = search.customer;
       if (search.http_code != 'Todos') data.http_code = search.http_code;
       if (search.pattern) data.pattern = search.pattern;
     }
@@ -242,7 +275,7 @@ $(document).ready(function () {
     $('#pagination').html(paginationHtml);
   }
 
-  getTransactions(1);
+  fetchClients();
 });
 
 function compararFechas(fecha1, fecha2) {

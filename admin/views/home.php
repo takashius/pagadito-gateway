@@ -20,7 +20,8 @@
       <div class="col-2">
         <div class="form-group">
           <label for="http_response"><?php echo __('HTTP Response', 'er-control-vatm'); ?></label>
-          <select class="general form-control" style="width:100%; max-width: none;" id="http_response" name="http_response">
+          <select class="general form-control" style="width:100%; max-width: none;" id="http_response"
+            name="http_response">
             <option>Todos</option>
             <option>200</option>
             <option>400</option>
@@ -30,24 +31,24 @@
       </div>
       <div class="col-2">
         <div class="form-group">
-          <label for="origin"><?php echo __('Origen', 'er-control-vatm'); ?></label>
-          <select class="general form-control" style="width:100%; max-width: none;" id="origin" name="origin">
+          <label for="origin"><?php echo __('Cliente', 'er-control-vatm'); ?></label>
+          <select class="general form-control" style="width:100%; max-width: none;" id="customer" name="customer">
             <option>Todos</option>
-            <option>Web</option>
-            <option>API</option>
           </select>
         </div>
       </div>
       <div class="col-2">
         <div class="form-group">
           <label for="date_to"><?php echo __('Desde:', 'er-control-vatm'); ?></label>
-          <input type="text" class="form-control" id="date_to" name="date_to" required readonly value="<?php echo date('d/m/Y') ?>">
+          <input type="text" class="form-control" id="date_to" name="date_to" required readonly
+            value="<?php echo date('d/m/Y') ?>">
         </div>
       </div>
       <div class="col-2">
         <div class="form-group">
           <label for="date_from"><?php echo __('Hasta:', 'er-control-vatm'); ?></label>
-          <input type="text" class="form-control" id="date_from" name="date_from" required readonly value="<?php echo date('d/m/Y') ?>">
+          <input type="text" class="form-control" id="date_from" name="date_from" required readonly
+            value="<?php echo date('d/m/Y') ?>">
         </div>
       </div>
       <div class="col-1 justify-content-center align-self-center">

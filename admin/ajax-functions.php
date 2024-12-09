@@ -34,6 +34,8 @@ function get_ajax_transactions()
   wp_die();
 }
 
+add_action('wp_ajax_get_clients', 'get_clients');
+
 add_action('wp_ajax_excel_report', 'excel_report');
 function excel_report()
 {
@@ -44,9 +46,20 @@ function excel_report()
   [$results, $total_results] = get_results(false);
 
   $headers = [
-    'Monto', 'Moneda', 'merchantReferenceId', 'Nombre', 'Apellido', 'IP',
-    'Autorizacion', 'http_code', 'response_code', 'Mensaje de respuesta',
-    'Fecha peticion', 'Fecha de pago', 'Origen', 'Fecha'
+    'Monto',
+    'Moneda',
+    'merchantReferenceId',
+    'Nombre',
+    'Apellido',
+    'IP',
+    'Autorizacion',
+    'http_code',
+    'response_code',
+    'Mensaje de respuesta',
+    'Fecha peticion',
+    'Fecha de pago',
+    'Origen',
+    'Fecha'
   ];
   $sheet->fromArray($headers, NULL, 'A1');
   foreach ($results as $result) {
@@ -122,9 +135,15 @@ function pdf_report()
   [$results, $total_results] = get_results(false);
 
   $headers = [
-    'Monto', 'Moneda', 'Nombre', 'IP',
-    'Autorizacion', 'http_code', 'Mensaje de respuesta',
-    'Origen', 'Fecha'
+    'Monto',
+    'Moneda',
+    'Nombre',
+    'IP',
+    'Autorizacion',
+    'http_code',
+    'Mensaje de respuesta',
+    'Origen',
+    'Fecha'
   ];
   $sheet->fromArray($headers, NULL, 'A1');
   foreach ($results as $result) {
@@ -210,6 +229,12 @@ function get_results($paginated)
     $params[] = $http_code;
   }
 
+  if ($_POST['customer']) {
+    $client_id = intval($_POST['customer']);
+    $where[] = " `client_id` = %d";
+    $params[] = $client_id;
+  }
+
   if ($_POST['pattern']) {
     $pattern = '%' . $wpdb->esc_like($_POST['pattern']) . '%';
     $where[] = " (`firstName` LIKE %s OR `lastName` LIKE %s OR `response_message` LIKE %s)";
@@ -252,4 +277,12 @@ function dateConvert($date)
   $dateConverted = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
 
   return $dateConverted;
+}
+
+function get_clients()
+{
+  global $wpdb;
+  $tableClients = $wpdb->prefix . "er_pagadito_clients";
+  $results = $wpdb->get_results("SELECT ID, name FROM $tableClients WHERE deleted = 0");
+  wp_send_json($results);
 }
