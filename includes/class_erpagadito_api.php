@@ -26,7 +26,16 @@ add_action('rest_api_init', function () {
     'methods' => 'POST',
     'callback' => 'save_product',
   ));
+  register_rest_route('pagadito/v1', '/setup_payer', array(
+    'methods' => 'POST',
+    'callback' => 'setup_payer_endpoint',
+  ));
+  register_rest_route('pagadito/v1', '/validate_card', array(
+    'methods' => 'POST',
+    'callback' => 'validate_card_endpoint',
+  ));
 });
+
 
 add_action('rest_api_init', function () {
   register_rest_route('pagadito/v1', '/clients', array(
@@ -94,6 +103,11 @@ function get_transactions($data)
     $where .= " AND `origin` = '" . esc_sql($origin) . "'";
   }
 
+  if ($data['country']) {
+    $country = $data['country'];
+    $where .= " AND `cod_country` = '" . esc_sql($country) . "'";
+  }
+
   if ($data['http_code']) {
     $http_code = $data['http_code'];
     $where .= " AND `http_code` = '" . esc_sql($http_code) . "'";
@@ -125,15 +139,14 @@ function save_product($data)
     return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
   }
 
-  $handler = new PagaditoHandler();
   $params = $data->get_json_params();
   $params['client_id'] = $client_id;
 
   // Verificar si el token es de sandbox
   if ($token === $client->sandbox_token) {
-    $handler->setTestMode(true);
+    $handler = new PagaditoHandler(true);
   } else {
-    $handler->setTestMode(false);
+    $handler = new PagaditoHandler();
   }
 
   $validateData = validateSaveProductRequest($params);
@@ -272,4 +285,91 @@ function regenerate_token_endpoint($data)
   } catch (Exception $e) {
     return new WP_REST_Response(array('message' => 'Error al regenerar el token', 'error' => $e->getMessage()), 500);
   }
+}
+
+function setup_payer_endpoint($data)
+{
+  // Validar el token
+  $token = $data->get_header('Authorization');
+  if (!$token) {
+    return new WP_REST_Response(array('message' => 'Token no proporcionado'), 401);
+  }
+
+  $token = str_replace('Bearer ', '', $token);
+  $client_id = validate_jwt_token($token);
+  if (!$client_id) {
+    return new WP_REST_Response(array('message' => 'Token inválido o expirado'), 401);
+  }
+
+  $clients = new Clients();
+  $client = $clients->getClientById($client_id);
+
+  if (!$client) {
+    return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
+  }
+
+  $params = [
+    "card" => [
+      "number" => sanitize_text_field($data['number']),
+      "expirationDate" => sanitize_text_field($data['expirationDate']),
+      "cvv" => sanitize_text_field($data['cvv']),
+      "cardHolderName" => sanitize_text_field($data['cardHolderName']),
+    ],
+  ];
+
+  // Instanciar PagaditoHandler y ejecutar setupPayer
+  if ($token === $client->sandbox_token) {
+    $handler = new PagaditoHandler(true);
+  } else {
+    $handler = new PagaditoHandler();
+  }
+  $res = $handler->setupPayer($params);
+
+  return new WP_REST_Response($res, 200);
+}
+
+function validate_card_endpoint($data)
+{
+  $token = $data->get_header('Authorization');
+  if (!$token) {
+    return new WP_REST_Response(array('message' => 'Token no proporcionado'), 401);
+  }
+
+  $token = str_replace('Bearer ', '', $token);
+  $client_id = validate_jwt_token($token);
+  if (!$client_id) {
+    return new WP_REST_Response(array('message' => 'Token inválido o expirado'), 401);
+  }
+
+  $clients = new Clients();
+  $client = $clients->getClientById($client_id);
+
+  if (!$client) {
+    return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
+  }
+
+  $params = $data->get_json_params();
+  $params['client_id'] = $client_id;
+
+  // Verificar si el token es de sandbox
+  if ($token === $client->sandbox_token) {
+    $handler = new PagaditoHandler(true);
+  } else {
+    $handler = new PagaditoHandler();
+  }
+
+  $validateData = validateSaveProductRequest($params);
+  if (count($validateData) > 0) {
+    return new WP_REST_Response(
+      array(
+        "pagadito_http_code" => 400,
+        "pagadito_response" => $validateData
+      ),
+      400
+    );
+  }
+
+  $res = $handler->handleWooCommerce($params, false);
+
+  return new WP_REST_Response($res, 200);
 }

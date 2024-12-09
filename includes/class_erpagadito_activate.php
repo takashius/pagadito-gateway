@@ -42,6 +42,7 @@ class ErPagadito_gateway_Activator
       . '`client_id` bigint(20) unsigned NOT NULL,'
       . '`amount` float(12,2) NOT NULL,'
       . '`currency` varchar(5) NULL,'
+      . '`cod_country` varchar(5) NULL,'
       . '`merchantReferenceId` varchar(40) NULL,'
       . '`firstName` varchar(160) NOT NULL,'
       . '`lastName` varchar(160) NOT NULL,'

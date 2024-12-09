@@ -5,7 +5,7 @@
  * Description: Custom payment gateway plugin for the Pagadito platform.
  * Author: Erick Hernandez
  * Author URI: http://erdesarrollo.com.ve
- * Version: 2.0.5
+ * Version: 3.0.4
  */
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
@@ -95,3 +95,33 @@ function activate_pagadito_gateway()
 register_activation_hook(__FILE__, 'activate_pagadito_gateway');
 
 require_once plugin_dir_path(__FILE__) . 'admin/pagadito-gateway-admin.php';
+
+
+function add_custom_plugin_query_vars($query_vars)
+{
+  $query_vars[] = 'pagadito_setup_payer';
+  $query_vars[] = 'pagadito_return';
+  return $query_vars;
+}
+add_filter('query_vars', 'add_custom_plugin_query_vars');
+
+function add_custom_plugin_rewrite_rules()
+{
+  add_rewrite_rule('^pagadito-test-3ds/?$', 'index.php?pagadito_setup_payer=1', 'top');
+  add_rewrite_rule('^pagadito-test-3ds/return/?$', 'index.php?pagadito_return=1', 'top');
+}
+add_action('init', 'add_custom_plugin_rewrite_rules');
+
+function template_redirect_to_custom_pages()
+{
+  global $wp_query;
+  if (isset($wp_query->query_vars['pagadito_setup_payer'])) {
+    include plugin_dir_path(__FILE__) . 'public/public-setup-payer.php';
+    exit;
+  }
+  if (isset($wp_query->query_vars['pagadito_return'])) {
+    include plugin_dir_path(__FILE__) . 'public/return.php';
+    exit;
+  }
+}
+add_action('template_redirect', 'template_redirect_to_custom_pages');

@@ -213,7 +213,7 @@ $(document).ready(function () {
         pattern: $('#pattern').val(),
         date_from: $('#date_from').val(),
         date_to: $('#date_to').val(),
-        origin: $('#origin').val(),
+        customer: $('#customer').val(),
         http_code: $('#http_response').val(),
       }
       getTransactions(page, params);

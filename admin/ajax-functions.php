@@ -34,8 +34,6 @@ function get_ajax_transactions()
   wp_die();
 }
 
-add_action('wp_ajax_get_clients', 'get_clients');
-
 add_action('wp_ajax_excel_report', 'excel_report');
 function excel_report()
 {
@@ -223,16 +221,16 @@ function get_results($paginated)
     $params[] = $origin;
   }
 
-  if ($_POST['http_code']) {
-    $http_code = $_POST['http_code'];
-    $where[] = " `http_code` = %s";
-    $params[] = $http_code;
-  }
-
   if ($_POST['customer']) {
     $client_id = intval($_POST['customer']);
     $where[] = " `client_id` = %d";
     $params[] = $client_id;
+  }
+
+  if ($_POST['http_code']) {
+    $http_code = $_POST['http_code'];
+    $where[] = " `http_code` = %s";
+    $params[] = $http_code;
   }
 
   if ($_POST['pattern']) {
@@ -279,6 +277,7 @@ function dateConvert($date)
   return $dateConverted;
 }
 
+add_action('wp_ajax_get_clients', 'get_clients');
 function get_clients()
 {
   global $wpdb;
