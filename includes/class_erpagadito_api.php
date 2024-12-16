@@ -369,7 +369,7 @@ function validate_card_endpoint($data)
     );
   }
 
-  $res = $handler->handleWooCommerce($params, false);
+  $res = $handler->handleWooCommerce($params, true);
 
   return new WP_REST_Response($res, 200);
 }

@@ -212,7 +212,7 @@ function get_results($paginated)
     $date_from = dateConvert($_POST['date_from']);
     $where[] = " `date` >= %s AND `date` <= %s";
     $params[] = $date_to;
-    $params[] = $date_from;
+    $params[] = $date_from . " 23:59:59";
   }
 
   if ($_POST['origin']) {
