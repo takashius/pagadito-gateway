@@ -4,32 +4,29 @@ require_once __DIR__ . '/../lib/class.pagadito.php';
 
 class PagaditoHandler
 {
-  private $gateway_options;
   private $testmode;
-  private $publishable_key;
-  private $private_key;
+  private $client_id;
+  private $client_secret;
 
   public function __construct($testmode = false)
   {
-    $this->gateway_options = get_option('woocommerce_' . 'er_pagadito_settings', array());
     $this->testmode = $testmode ? 'yes' : 'no';
-
     $this->initializeKeys();
   }
 
   private function initializeKeys()
   {
     if ($this->testmode === 'yes') {
-      define("GATEWAY_URL", "https://sandbox-api.pagadito.com/v1/");
-      $this->publishable_key = '10c761376d75ed5f70e6652bbe987856';
-      $this->private_key = '3e6f661af746a20050c23659857dea29';
+      define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
+      $this->client_id = '663c2773-a145-4b84-8007-8ff273beec1a';
+      $this->client_secret = 'OWU4NzFkNjQtNjdkMC00N2Y2LTgyOGQtZTI5ZjI1MDg2MDIy';
     } else {
-      define("GATEWAY_URL", "https://api.pagadito.com/v1/");
-      $this->publishable_key = '819ee22a707276e70912b4ba5eb839b7';
-      $this->private_key = 'c2cbb1d92d007e66b3a4471c72adaf1f';
+      define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
+      $this->client_id = '663c2773-a145-4b84-8007-8ff273beec1a';
+      $this->client_secret = 'OWU4NzFkNjQtNjdkMC00N2Y2LTgyOGQtZTI5ZjI1MDg2MDIy';
     }
-    define("KEY_UID", $this->publishable_key);
-    define("KEY_WSK", $this->private_key);
+    define("CLIENT_ID", $this->client_id);
+    define("CLIENT_SECRET", $this->client_secret);
   }
 
   public function processTransaction($data)

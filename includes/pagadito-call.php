@@ -2,7 +2,6 @@
 
 $gateway_options = get_option('woocommerce_' . 'er_pagadito_settings', array());
 $testmode = isset($gateway_options['testmode']) ? $gateway_options['testmode'] : 'yes';
-$testmode = 'yes';
 $test_publishable_key = isset($gateway_options['test_publishable_key']) ? $gateway_options['test_publishable_key'] : '';
 $test_private_key = isset($gateway_options['test_private_key']) ? $gateway_options['test_private_key'] : '';
 $publishable_key = isset($gateway_options['publishable_key']) ? $gateway_options['publishable_key'] : '';
@@ -39,7 +38,7 @@ $params = array(
       'city' => $city,
       'state' => $state,
       'zip' => $postalCode,
-      'countryId' => $country,
+      'countryId' => '222',
       'line1' => $address_1,
       'line2' => $address_2,
       'phone' => $phone,

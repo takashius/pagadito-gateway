@@ -1,29 +1,33 @@
 <?php
 
-class Pagadito {
-    
+class Pagadito
+{
+
     // <editor-fold defaultstate="collapsed" desc="Atributos">
     //**************************************************************************
     private $debug_mode;
-    private $key_uid;
-    private $key_wsk;
     private $url;
+    private $authToken;
     protected $curlObj;
     //**************************************************************************
     // </editor-fold>
-    
+
     // <editor-fold defaultstate="collapsed" desc="Funciones Públicas">
     //**************************************************************************
     /**
      * Es el constructor de la clase.
      * @param   bool $debug_mode Define si operar en modo debug.
      */
-    public function __construct($debug_mode = false) {
+    public function __construct($debug_mode = false)
+    {
         $this->curlObj = curl_init();
         $this->debug_mode = $debug_mode;
         $this->config();
+
+        $token = $this->checkAndGetToken();
+        $this->authToken = $token;
     }
-    
+
     public function createCustomer($params)
     {
         return $this->callToAPI('customer', $params, "POST");
@@ -39,44 +43,51 @@ class Pagadito {
         return $this->callToAPI('validate-process-by-token', $params, "POST");
     }
 
-    public function sendPayment($params) {
-        
+    public function sendPayment($params)
+    {
+
         return $this->callToAPI('payment', $params, "POST");
     }
 
 
-    public function createSubscription($params) {
-        
+    public function createSubscription($params)
+    {
+
         return $this->callToAPI('subscription', $params, "POST");
     }
 
-    public function sendSubscriptionToken($params) {
-        
+    public function sendSubscriptionToken($params)
+    {
+
         return $this->callToAPI('subscription-by-token', $params, "POST");
     }
 
-    public function cancelSubscription($params) {
-        
+    public function cancelSubscription($params)
+    {
+
         return $this->callToAPI('subscription-cancel', $params, "POST");
     }
 
-    public function sendRefund($params) {
-        
+    public function sendRefund($params)
+    {
+
         return $this->callToAPI('refund', $params, "POST");
     }
     // --
-    public function setupPayer($params) {
+    public function setupPayer($params)
+    {
         return $this->callToAPI('setup-payer', $params, "POST");
     }
-    
-    public function setupPayerByToken($params) {
+
+    public function setupPayerByToken($params)
+    {
         return $this->callToAPI('setup-payer-by-token', $params, "POST");
     }
 
-    
+
     //**************************************************************************
     // </editor-fold>
-    
+
     // <editor-fold defaultstate="collapsed" desc="Funciones Privadas">
     //**************************************************************************
     private function config()
@@ -85,7 +96,58 @@ class Pagadito {
         $this->key_wsk = KEY_WSK;
         $this->url = GATEWAY_URL;
     }
-    
+
+    private function getToken()
+    {
+        $url = str_replace("v1/", "", $this->url);
+        $params = [
+            "client_id" => CLIENT_ID,
+            "client_secret" => CLIENT_SECRET,
+        ];
+
+        $request = json_encode($params);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url . 'token');
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: Application/json;charset=UTF-8"));
+
+        $curl_response = curl_exec($ch);
+        $info = curl_getinfo($ch);
+
+        if (curl_error($ch)) {
+            throw new Exception('Error obtaining token: ' . curl_error($ch));
+        }
+
+        curl_close($ch);
+
+        if ($info["http_code"] == 200) {
+            $response = json_decode($curl_response, true);
+            if (isset($response['token']) && isset($response['expires'])) {
+                file_put_contents('token.txt', $response['token']);
+                file_put_contents('token_expiration.txt', $response['expires']);
+                return $response['token'];
+            } else {
+                throw new Exception('Invalid token response');
+            }
+        } else {
+            throw new Exception('Failed to obtain token, HTTP code: ' . $info["http_code"]);
+        }
+    }
+
+    private function checkAndGetToken()
+    {
+        if (file_exists('token.txt') && file_exists('token_expiration.txt')) {
+            $token = file_get_contents('token.txt');
+            $expires = file_get_contents('token_expiration.txt');
+            if (new DateTime($expires) > new DateTime()) {
+                return $token;
+            }
+        }
+        return $this->getToken();
+    }
+
     private function parseRequest($formData)
     {
         $request = "";
@@ -99,7 +161,7 @@ class Pagadito {
 
     public function removeEmptyValues($array)
     {
-        foreach ($array as $i => $value ) {
+        foreach ($array as $i => $value) {
             if (is_array($array[$i])) {
                 if (count($array[$i]) == 0) {
                     unset($array[$i]);
@@ -127,8 +189,12 @@ class Pagadito {
 
         $request = $this->parseRequest($params);
         curl_setopt($this->curlObj, CURLOPT_URL, ($this->url . $resource));
-        curl_setopt($this->curlObj, CURLOPT_USERPWD, $this->key_uid . ":" . $this->key_wsk);
         curl_setopt($this->curlObj, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($this->curlObj, CURLOPT_HTTPHEADER, array(
+            "Authorization: Bearer " . $this->authToken,
+            "Content-Type: Application/json;charset=UTF-8",
+            "Content-Length: " . strlen($request)
+        ));
 
         if ($method == "GET") {
             curl_setopt($this->curlObj, CURLOPT_HTTPGET, 1);
@@ -137,8 +203,6 @@ class Pagadito {
         } elseif ($method == "POST") {
             curl_setopt($this->curlObj, CURLOPT_POST, 1);
             curl_setopt($this->curlObj, CURLOPT_POSTFIELDS, $request);
-            curl_setopt($this->curlObj, CURLOPT_HTTPHEADER, array("Content-Length: " . strlen($request)));
-            curl_setopt($this->curlObj, CURLOPT_HTTPHEADER, array("Content-Type: Application/json;charset=UTF-8"));
         }
 
         if ($this->debug_mode) {
@@ -146,7 +210,7 @@ class Pagadito {
         }
 
         $curl_response = curl_exec($this->curlObj);
-        
+
         $info = curl_getinfo($this->curlObj);
 
         if (array_key_exists("http_code", $info)) {
@@ -166,7 +230,6 @@ class Pagadito {
             $response['curl_response'] = $curl_response;
         }
 
-
         if (curl_error($this->curlObj)) {
             $response['curl_error'] = curl_errno($this->curlObj) . " - " . curl_error($this->curlObj);
         }
@@ -178,6 +241,7 @@ class Pagadito {
         }
         return $response;
     }
+
 
     //**************************************************************************
     // </editor-fold>
