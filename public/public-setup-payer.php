@@ -51,7 +51,7 @@
 
 <body>
   <h1>Prueba de Setup Payer</h1>
-  <input type="text" id="cardNumber" placeholder="4000000000002701" />
+  <input type="text" id="cardNumber" placeholder="4000000000002503" />
   <button id="setupPayerBtn">Probar Setup Payer</button>
   <iframe id="step_up_iframe" style="border: none; display: block; margin-top: 10px" height="600px" width="400px"
     name="stepUpIframe"></iframe>
@@ -70,7 +70,7 @@
   var token =
     "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
   var testData = {
-    number: "4000000000002701",
+    number: "4000000000002503",
     expirationDate: "01/2026",
     cvv: "123",
     cardHolderName: "JOHN DOE",
@@ -93,8 +93,7 @@
     holderName: testData.cardHolderName,
     cardNumber: testData.number,
     cvv: testData.cvv,
-    expiryMonth: "01",
-    expiryYear: "2026",
+    expirationDate: testData.expirationDate,
     referenceId: "",
     request_id: "",
     returnUrl: "http://testwoocommerce.local/pagadito-test-3ds/return",
@@ -121,7 +120,7 @@
           Authorization: token,
           "Content-Type": "application/json",
         },
-        data: JSON.stringify(testData),
+        data: JSON.stringify(paymentData),
         success: function(response) {
           if (
             response.pagadito_response.deviceDataCollectionUrl &&
@@ -134,6 +133,10 @@
             localStorage.setItem(
               "request_id",
               response.pagadito_response.request_id
+            );
+            localStorage.setItem(
+              "transactionToken",
+              response.pagadito_response.token
             );
             paymentData.referenceId =
               response.pagadito_response.referenceId;
@@ -181,13 +184,15 @@
             if (rsp.Status === true) {
               // Llamada al endpoint de cobro
               $.ajax({
-                url: urlBase + "/cobro",
+                url: urlBase + "/customer",
                 method: "POST",
                 headers: {
                   Authorization: token,
                   "Content-Type": "application/json",
                 },
-                data: JSON.stringify(paymentData),
+                data: JSON.stringify({
+                  token: localStorage.getItem("transactionToken")
+                }),
                 success: function(response) {
                   console.log("Respuesta del servidor (cobro):", response);
                   if (response.pagadito_http_code == 200) {
@@ -195,11 +200,11 @@
                       "Cobro realizado con éxito. Revisa la consola para más detalles."
                     );
                   } else if (
-                    response.pagadito_response.response_code == "PG402-05"
+                    response.pagadito_response.data.response_code == "PG402-05"
                   ) {
                     localStorage.setItem(
                       "id_transaction",
-                      response.pagadito_response.customer_reply
+                      response.pagadito_response.data.customer_reply
                       .id_transaction
                     );
                     // pending authentication step up challenge
@@ -211,9 +216,9 @@
                       document.querySelector("#step_up_form_custom_data");
 
                     form_step_up_form.action =
-                      response.pagadito_response.customer_reply.stepUpUrl;
+                      response.pagadito_response.data.customer_reply.stepUpUrl;
                     form_step_up_form_jwt_input.value =
-                      response.pagadito_response.customer_reply.accessToken;
+                      response.pagadito_response.data.customer_reply.accessToken;
                     form_step_up_form_custom_data.value =
                       JSON.stringify(paymentData);
                     form_step_up_form.submit();

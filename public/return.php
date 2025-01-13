@@ -32,74 +32,53 @@
 </body>
 
 <script type="text/javascript">
-  var token =
-    "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
+var token =
+  "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
 
-  //Es el mismo objeto que esta en index
-  var paymentData = {
-    amount: "33.948800",
-    currency: "USD",
-    mechantReferenceId: "1188def5-c0ee-4586-aa51-499bab78efc4",
-    firstName: "JOHN",
-    lastName: "DOE",
-    email: "pagador_sandbox@pagadito.com",
-    phone: "2341410133",
-    address: "avenidaamericasur162",
-    postalCode: "13006",
-    city: "trujillo",
-    state: "NA",
-    country: "604",
-    ip: "179.60.205.141",
-    holderName: "JOHN DOE",
-    cardNumber: localStorage.getItem('cardNumber'),
-    cvv: "123",
-    expiryMonth: "01",
-    expiryYear: "2026",
-    referenceId: localStorage.getItem('referenceId'),
-    TransactionId: localStorage.getItem('id_transaction'),
-    request_id: localStorage.getItem('request_id'),
-    returnUrl: "http://localhost/demo3ds/return.php",
-  };
+var payload = {
+  token: localStorage.getItem('transactionToken'),
+  transactionId: localStorage.getItem('id_transaction'),
+};
 
-  $(document).ready(function() {
-    $.ajax({
-      // url: "https://redwtele.com/wp-json/pagadito/v1/validate_card",
-      url: "http://testwoocommerce.local/wp-json/pagadito/v1/validate_card",
-      method: "POST",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/json",
-      },
-      data: JSON.stringify(paymentData),
-      success: function(response) {
-        console.log(response);
-        if (response.pagadito_http_code == 200) {
-          if (response.pagadito_response.response_code == 'PG200-00') {
-            let msj = "Pago procesado con exito.\n"
+$(document).ready(function() {
+  $.ajax({
+    // url: "https://redwtele.com/wp-json/pagadito/v1/validate_card",
+    url: "http://testwoocommerce.local/wp-json/pagadito/v1/validate_card",
+    method: "POST",
+    headers: {
+      Authorization: token,
+      "Content-Type": "application/json",
+    },
+    data: JSON.stringify(payload),
+    success: function(response) {
+      console.log(response);
+      if (response.pagadito_http_code == 200) {
+        if (response.pagadito_response.response_code == 'PG200-00') {
+          let msj = "Pago procesado con exito.\n"
 
-            msj += "\n\t Autorizacion: " + response.pagadito_response.customer_reply.authorization
-            msj += "\n\t ID Transaccion: " + response.pagadito_response.customer_reply.merchantTransactionId
-            msj += "\n\t Total: " + response.pagadito_response.customer_reply.totalAmount
+          msj += "\n\t Autorizacion: " + response.pagadito_response.customer_reply.authorization
+          msj += "\n\t ID Transaccion: " + response.pagadito_response.customer_reply.merchantTransactionId
+          msj += "\n\t Total: " + response.pagadito_response.customer_reply.totalAmount
 
-            alert(msj);
-          } else {
-            alert("no se pudo procesar el pago");
-          }
-        } else {
-          console.log(response.pagadito_response.customer_reply);
-
-          let msj = "No se pudo procesar el pago: \n"
-          msj += "\n\t " + response.pagadito_response.customer_reply
           alert(msj);
+        } else {
+          alert("no se pudo procesar el pago");
         }
-      },
-      error: function(jqXHR, textStatus, errorThrown) {
-        console.log("Error:", jqXHR.responseText);
-        alert("Error en la operación. Revisa la consola para más detalles.");
-      },
-    });
+      } else {
+        console.log(response.pagadito_response.customer_reply);
 
+        let msj = "No se pudo procesar el pago: \n"
+        msj += "\n\t " + response.pagadito_response.customer_reply
+        alert(msj);
+      }
+    },
+    error: function(jqXHR, textStatus, errorThrown) {
+      console.log("Error:", jqXHR.responseText);
+      alert("Error en la operación. Revisa la consola para más detalles.");
+    },
   });
+
+});
 </script>
 
 </html>

@@ -35,7 +35,7 @@ class Pagadito
 
     public function validateProcessCard($params)
     {
-        return $this->callToAPI('validate-process-card', $params, "POST");
+        return $this->callToAPI('3ds/payment-validation', $params, "POST");
     }
 
     public function validateProcessByToken($params)
@@ -76,7 +76,12 @@ class Pagadito
     // --
     public function setupPayer($params)
     {
-        return $this->callToAPI('setup-payer', $params, "POST");
+        return $this->callToAPI('3ds/setup-payer', $params, "POST");
+    }
+
+    public function setCustomer($params)
+    {
+        return $this->callToAPI('3ds/customer', $params, "POST");
     }
 
     public function setupPayerByToken($params)
@@ -92,14 +97,13 @@ class Pagadito
     //**************************************************************************
     private function config()
     {
-        $this->key_uid = KEY_UID;
-        $this->key_wsk = KEY_WSK;
         $this->url = GATEWAY_URL;
     }
 
     private function getToken()
     {
         $url = str_replace("v1/", "", $this->url);
+        $url = rtrim($url, '/') . '/token';
         $params = [
             "client_id" => CLIENT_ID,
             "client_secret" => CLIENT_SECRET,
@@ -107,17 +111,21 @@ class Pagadito
 
         $request = json_encode($params);
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url . 'token');
+        curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: Application/json;charset=UTF-8"));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json;charset=UTF-8"));
+        curl_setopt($ch, CURLOPT_VERBOSE, true);
 
         $curl_response = curl_exec($ch);
         $info = curl_getinfo($ch);
 
-        if (curl_error($ch)) {
+        if (curl_errno($ch)) {
             throw new Exception('Error obtaining token: ' . curl_error($ch));
+        } else {
+            echo 'HTTP Code: ' . $info['http_code'] . "\n";
+            echo 'Response: ' . $curl_response . "\n";
         }
 
         curl_close($ch);
@@ -132,9 +140,10 @@ class Pagadito
                 throw new Exception('Invalid token response');
             }
         } else {
-            throw new Exception('Failed to obtain token, HTTP code: ' . $info["http_code"]);
+            throw new Exception('Failed to obtain token, HTTP code: ' . $info["http_code"] . ' => ' . $url);
         }
     }
+
 
     private function checkAndGetToken()
     {

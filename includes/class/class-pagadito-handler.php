@@ -18,8 +18,8 @@ class PagaditoHandler
   {
     if ($this->testmode === 'yes') {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
-      $this->client_id = '663c2773-a145-4b84-8007-8ff273beec1a';
-      $this->client_secret = 'OWU4NzFkNjQtNjdkMC00N2Y2LTgyOGQtZTI5ZjI1MDg2MDIy';
+      $this->client_id = 'c77dfc98-e2a6-4482-b7df-b6e50e138af5';
+      $this->client_secret = 'NzJjMGEwMDYtNmVkYy00NDUwLWFmODgtZDMwOGRjMDY2OWZi';
     } else {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
       $this->client_id = '663c2773-a145-4b84-8007-8ff273beec1a';
@@ -110,69 +110,85 @@ class PagaditoHandler
     );
   }
 
-  public function handleWooCommerce($data, $validate = false)
+  public function handleWooCommerce($data)
   {
     if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
       echo 'WooCommerce no está activo. Asegúrate de activarlo para proceder.';
       return;
     }
 
-    global $wpdb;
-    if ($validate) {
-      $res = $this->validateProcessCard($data);
-    } else {
-      $res = $this->processTransaction($data);
-    }
-    $environment = $this->testmode === 'yes' ? 'sandbox' : 'production';
+    $order = wc_create_order();
+    $order->set_created_via('store-api');
+    //LOCAL 62
+    //PRODUCTION 269
+    $product = new WC_Product_Variable(269);
+    $product->set_regular_price((float)$data['amount']);
+    $product->set_price((float)$data['amount']);
+    $product->save();
+    $order->add_product($product, 1);
 
-    $order_data = [
-      'client_id' => $data['client_id'],
-      'amount' => (float)$data['amount'],
-      'currency' => $data['currency'],
-      'merchantReferenceId' => $data['mechantReferenceId'],
-      'firstName' => $data['firstName'],
-      'lastName' => $data['lastName'],
-      'ip' => $data['ip'],
-      'cod_country' => $data['country'],
-      'environment' => $environment,
-      'http_code' => $res['pagadito_http_code']
-    ];
+    $this->setOrderBilling($order, $data);
+    $this->setOrderShipping($order, $data);
+
+    $order->set_status('wc-completed', 'Order is created programmatically');
+    $order->add_meta_data('request_id', $data['request_id']);
+    $order->add_meta_data('authorization', $data['authorization']);
+    $order->set_payment_method('er_pagadito');
+    $order->payment_complete();
+    $order->calculate_totals();
+    $order->save();
+  }
+
+  public function handleSaveData($res, $token, $customerReply = true)
+  {
+    global $wpdb;
 
     if ($res['pagadito_http_code'] === 200) {
-      $order = wc_create_order();
-      $order->set_created_via('store-api');
-      //LOCAL 62
-      //PRODUCTION 269
-      $product = new WC_Product_Variable(269);
-      $product->set_regular_price((float)$data['amount']);
-      $product->set_price((float)$data['amount']);
-      $product->save();
-      $order->add_product($product, 1);
-
-      $this->setOrderBilling($order, $data);
-      $this->setOrderShipping($order, $data);
-
-      $order->set_status('wc-completed', 'Order is created programmatically');
-      $order->add_meta_data('request_id', $res['pagadito_response']['request_id']);
-      $order->add_meta_data('authorization', $res['pagadito_response']['customer_reply']['authorization']);
-      $order->set_payment_method('er_pagadito');
-      $order->payment_complete();
-      $order->calculate_totals();
-      $order->save();
-
-      $order_data['authorization'] = $res['pagadito_response']['customer_reply']['authorization'];
-      $order_data['paymentDate'] = $res['pagadito_response']['customer_reply']['paymentDate'];
+      if ($customerReply) {
+        $update_data = array(
+          'http_code' => 200,
+          'response_code' => $res['pagadito_response']['response_code'],
+          'response_message' => $res['pagadito_response']['response_message'],
+          'request_date' => $res['pagadito_response']['request_date'],
+          'paymentDate' => $res['pagadito_response']['customer_reply']['paymentDate'],
+          'authorization' => $res['pagadito_response']['customer_reply']['authorization']
+        );
+        $updateSymbol = ['%d', '%s', '%s', '%s', '%s', '%s'];
+      } else {
+        $update_data = array(
+          'http_code' => 200,
+          'response_code' => $res['pagadito_response']['response_code'],
+          'response_message' => $res['pagadito_response']['response_message'],
+          'request_date' => $res['pagadito_response']['request_date'],
+          'paymentDate' => $res['pagadito_response']['request_date']
+        );
+        $updateSymbol = ['%d', '%s', '%s', '%s', '%s'];
+      }
+    } else {
+      $update_data = array(
+        'http_code' => $res['pagadito_http_code'],
+        'response_code' => $res['pagadito_response']['response_code'],
+        'response_message' => $res['pagadito_response']['response_message'],
+        'request_date' => $res['pagadito_response']['request_date']
+      );
+      $updateSymbol = ['%d', '%s', '%s', '%s'];
     }
 
-    if ($res['pagadito_response']) {
-      $order_data['response_code'] = $res['pagadito_response']['response_code'];
-      $order_data['response_message'] = $res['pagadito_response']['response_message'];
-      $order_data['request_date'] = $res['pagadito_response']['request_date'];
-    }
+    $where = array(
+      'token' => $token
+    );
 
-    $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $order_data);
+    $wpdb->update(
+      $wpdb->prefix . "er_pagadito_operations",
+      $update_data,
+      $where,
+      $updateSymbol,
+      array('%s')
+    );
 
-    return $res;
+    $query = $wpdb->prepare("SELECT * FROM {$wpdb->prefix}er_pagadito_operations WHERE token = %s", $token);
+    $updated_record = $wpdb->get_row($query, ARRAY_A);
+    $this->handleWooCommerce($updated_record);
   }
 
   private function setOrderBilling($order, $data)
@@ -185,7 +201,7 @@ class PagaditoHandler
     $order->set_billing_address_2('');
     $order->set_billing_city($data['city']);
     $order->set_billing_postcode($data['postalCode']);
-    $order->set_billing_country($data['country']);
+    $order->set_billing_country($data['cod_country']);
   }
 
   private function setOrderShipping($order, $data)
@@ -196,13 +212,53 @@ class PagaditoHandler
     $order->set_shipping_address_2('');
     $order->set_shipping_city($data['city']);
     $order->set_shipping_postcode($data['postalCode']);
-    $order->set_shipping_country($data['country']);
+    $order->set_shipping_country($data['cod_country']);
   }
 
-  public function setupPayer($params)
+  public function setupPayer($params, $client_id, $ip)
   {
+    global $wpdb;
     $Pagadito = new Pagadito(false);
     $res = $Pagadito->setupPayer($params);
+    $environment = $this->testmode === 'yes' ? 'sandbox' : 'production';
+    $order_data = [
+      'client_id' => $client_id,
+      'amount' => $params['transaction']['transactionDetails'][0]['amount'],
+      'currency' => $params['transaction']['currencyId'],
+      'merchantReferenceId' => $params['transaction']['merchantTransactionId'],
+      'firstName' => $params['card']['firstName'],
+      'lastName' => $params['card']['lastName'],
+      'ip' => $ip,
+      'cod_country' => $params['card']['billingAddress']['countryId'],
+      'environment' => $environment,
+      'token' => $res['pagadito_response']['token'],
+      'request_id' => $res['pagadito_response']['request_id'],
+      'referenceId' => $res['pagadito_response']['referenceId'],
+      'email' => $params['card']['email'],
+      'phone' => $params['card']['billingAddress']['phone'],
+      'address' => $params['card']['billingAddress']['line1'],
+      'city' => $params['card']['billingAddress']['city'],
+      'postalCode' => $params['card']['billingAddress']['zip'],
+    ];
+    $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $order_data);
+
+    return $res;
+  }
+
+  public function setCustomer($params)
+  {
+    $Pagadito = new Pagadito();
+    $res = $Pagadito->setCustomer($params);
+    $this->handleSaveData($res, $params['token'], false);
+
+    return $res;
+  }
+
+  public function setValidateCard($params)
+  {
+    $Pagadito = new Pagadito();
+    $res = $Pagadito->validateProcessCard($params);
+    $this->handleSaveData($res, $params['token']);
 
     return $res;
   }

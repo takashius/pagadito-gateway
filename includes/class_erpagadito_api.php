@@ -26,6 +26,10 @@ add_action('rest_api_init', function () {
     'methods' => 'POST',
     'callback' => 'save_product',
   ));
+  register_rest_route('pagadito/v1', '/customer', array(
+    'methods' => 'POST',
+    'callback' => 'customer_endpoint',
+  ));
   register_rest_route('pagadito/v1', '/setup_payer', array(
     'methods' => 'POST',
     'callback' => 'setup_payer_endpoint',
@@ -310,11 +314,33 @@ function setup_payer_endpoint($data)
 
   $params = [
     "card" => [
-      "number" => sanitize_text_field($data['number']),
+      "number" => sanitize_text_field($data['cardNumber']),
       "expirationDate" => sanitize_text_field($data['expirationDate']),
       "cvv" => sanitize_text_field($data['cvv']),
-      "cardHolderName" => sanitize_text_field($data['cardHolderName']),
+      "cardHolderName" => sanitize_text_field($data['holderName']),
+      "firstName" => sanitize_text_field($data['firstName']),
+      "lastName" => sanitize_text_field($data['lastName']),
+      "billingAddress" => [
+        "city" => sanitize_text_field($data['city']),
+        "state" => sanitize_text_field($data['state']),
+        "zip" => sanitize_text_field($data['postalCode']),
+        "countryId" => sanitize_text_field($data['country']),
+        "line1" => sanitize_text_field($data['address']),
+        "phone" => sanitize_text_field($data['phone']),
+      ],
+      'email' => sanitize_text_field($data['email']),
     ],
+    "transaction" => [
+      "merchantTransactionId" => sanitize_text_field($data['mechantReferenceId']),
+      "currencyId" => sanitize_text_field($data['currency']),
+      "transactionDetails" => [
+        [
+          "quantity" => "1",
+          "description" => "Recarga",
+          "amount" => sanitize_text_field($data['amount']),
+        ],
+      ],
+    ]
   ];
 
   // Instanciar PagaditoHandler y ejecutar setupPayer
@@ -323,7 +349,52 @@ function setup_payer_endpoint($data)
   } else {
     $handler = new PagaditoHandler();
   }
-  $res = $handler->setupPayer($params);
+  $res = $handler->setupPayer($params, $client_id, sanitize_text_field($data['ip']));
+
+  return new WP_REST_Response($res, 200);
+}
+
+function customer_endpoint($data)
+{
+  $token = $data->get_header('Authorization');
+  if (!$token) {
+    return new WP_REST_Response(array('message' => 'Token no proporcionado'), 401);
+  }
+
+  $token = str_replace('Bearer ', '', $token);
+  $client_id = validate_jwt_token($token);
+  if (!$client_id) {
+    return new WP_REST_Response(array('message' => 'Token inválido o expirado'), 401);
+  }
+
+  $clients = new Clients();
+  $client = $clients->getClientById($client_id);
+
+  if (!$client) {
+    return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
+  }
+
+  $params = $data->get_json_params();
+  $params['client_id'] = $client_id;
+
+  // Verificar si el token es de sandbox
+  if ($token === $client->sandbox_token) {
+    $handler = new PagaditoHandler(true);
+  } else {
+    $handler = new PagaditoHandler();
+  }
+
+  if (!isset($params['token']) || !is_string($params['token']) || empty($params['token'])) {
+    return new WP_REST_Response(
+      array(
+        "pagadito_http_code" => 400,
+        "pagadito_response" => 'Token is required and must be a non-empty string'
+      ),
+      400
+    );
+  }
+
+  $res = $handler->setCustomer($params);
 
   return new WP_REST_Response($res, 200);
 }
@@ -358,18 +429,27 @@ function validate_card_endpoint($data)
     $handler = new PagaditoHandler();
   }
 
-  $validateData = validateSaveProductRequest($params);
-  if (count($validateData) > 0) {
+  if (!isset($params['token']) || !is_string($params['token']) || empty($params['token'])) {
     return new WP_REST_Response(
       array(
         "pagadito_http_code" => 400,
-        "pagadito_response" => $validateData
+        "pagadito_response" => 'Token is required and must be a non-empty string'
       ),
       400
     );
   }
 
-  $res = $handler->handleWooCommerce($params, true);
+  if (!isset($params['transactionId']) || !is_string($params['transactionId']) || empty($params['transactionId'])) {
+    return new WP_REST_Response(
+      array(
+        "pagadito_http_code" => 400,
+        "pagadito_response" => 'Transaction ID is required and must be a non-empty string'
+      ),
+      400
+    );
+  }
+
+  $res = $handler->setValidateCard($params);
 
   return new WP_REST_Response($res, 200);
 }

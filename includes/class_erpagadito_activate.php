@@ -47,6 +47,13 @@ class ErPagadito_gateway_Activator
       . '`firstName` varchar(160) NOT NULL,'
       . '`lastName` varchar(160) NOT NULL,'
       . '`ip` varchar(20) NOT NULL,'
+      . '`email` varchar(120) NOT NULL,'
+      . '`phone` varchar(60) NOT NULL,'
+      . '`address` varchar(160) NOT NULL,'
+      . '`city` varchar(20) NOT NULL,'
+      . '`postalCode` varchar(20) NOT NULL,'
+      . '`request_id` varchar(100) NULL,'
+      . '`referenceId` varchar(100) NULL,'
       . '`authorization` varchar(60) NOT NULL,'
       . '`http_code` varchar(5) NOT NULL,'
       . '`response_code` varchar(25) NOT NULL,'
@@ -55,6 +62,7 @@ class ErPagadito_gateway_Activator
       . '`paymentDate` datetime NULL,'
       . '`environment` ENUM("production", "sandbox") NOT NULL,'
       . '`origin` ENUM("web", "api") NOT NULL DEFAULT "api",'
+      . '`token` varchar(160) NULL,'
       . '`date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP'
       . ');';
 
