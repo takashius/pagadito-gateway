@@ -18,8 +18,8 @@ class PagaditoHandler
   {
     if ($this->testmode === 'yes') {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
-      $this->client_id = 'c77dfc98-e2a6-4482-b7df-b6e50e138af5';
-      $this->client_secret = 'NzJjMGEwMDYtNmVkYy00NDUwLWFmODgtZDMwOGRjMDY2OWZi';
+      $this->client_id = 'd19e9090-e1d6-4466-9d53-c582afe2bdee';
+      $this->client_secret = 'ZGRhNmQ5YjYtOGM5YS00MThiLTgxYzgtOGNmNzQ2YTExZTFm';
     } else {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
       $this->client_id = '663c2773-a145-4b84-8007-8ff273beec1a';
@@ -147,29 +147,29 @@ class PagaditoHandler
       if ($customerReply) {
         $update_data = array(
           'http_code' => 200,
-          'response_code' => $res['pagadito_response']['response_code'],
-          'response_message' => $res['pagadito_response']['response_message'],
-          'request_date' => $res['pagadito_response']['request_date'],
-          'paymentDate' => $res['pagadito_response']['customer_reply']['paymentDate'],
-          'authorization' => $res['pagadito_response']['customer_reply']['authorization']
+          'response_code' => $res['pagadito_response']['data']['response_code'],
+          'response_message' => $res['pagadito_response']['data']['response_message'],
+          'request_date' => $res['pagadito_response']['data']['request_date'],
+          'paymentDate' => $res['pagadito_response']['data']['customer_reply']['paymentDate'],
+          'authorization' => $res['pagadito_response']['data']['customer_reply']['authorization']
         );
         $updateSymbol = ['%d', '%s', '%s', '%s', '%s', '%s'];
       } else {
         $update_data = array(
           'http_code' => 200,
-          'response_code' => $res['pagadito_response']['response_code'],
-          'response_message' => $res['pagadito_response']['response_message'],
-          'request_date' => $res['pagadito_response']['request_date'],
-          'paymentDate' => $res['pagadito_response']['request_date']
+          'response_code' => $res['pagadito_response']['data']['response_code'],
+          'response_message' => $res['pagadito_response']['data']['response_message'],
+          'request_date' => $res['pagadito_response']['data']['request_date'],
+          'paymentDate' => $res['pagadito_response']['data']['request_date']
         );
         $updateSymbol = ['%d', '%s', '%s', '%s', '%s'];
       }
     } else {
       $update_data = array(
         'http_code' => $res['pagadito_http_code'],
-        'response_code' => $res['pagadito_response']['response_code'],
-        'response_message' => $res['pagadito_response']['response_message'],
-        'request_date' => $res['pagadito_response']['request_date']
+        'response_code' => $res['pagadito_response']['data']['response_code'],
+        'response_message' => $res['pagadito_response']['data']['response_message'],
+        'request_date' => $res['pagadito_response']['data']['request_date']
       );
       $updateSymbol = ['%d', '%s', '%s', '%s'];
     }

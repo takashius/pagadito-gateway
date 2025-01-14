@@ -330,6 +330,7 @@ function setup_payer_endpoint($data)
       ],
       'email' => sanitize_text_field($data['email']),
     ],
+    'returnUrl' => sanitize_text_field($data['returnUrl']),
     "transaction" => [
       "merchantTransactionId" => sanitize_text_field($data['mechantReferenceId']),
       "currencyId" => sanitize_text_field($data['currency']),
