@@ -32,14 +32,14 @@ class PagaditoHandler
   public function processTransaction($data)
   {
     $params = $this->prepareTransactionParams($data);
-    $Pagadito = new Pagadito(false);
+    $Pagadito = new Pagadito();
     return $Pagadito->createCustomer($params);
   }
 
   public function validateProcessCard($data)
   {
     $params = $this->prepareTransactionParams($data);
-    $Pagadito = new Pagadito(false);
+    $Pagadito = new Pagadito();
     return $Pagadito->validateProcessCard($params);
   }
 
@@ -147,29 +147,29 @@ class PagaditoHandler
       if ($customerReply) {
         $update_data = array(
           'http_code' => 200,
-          'response_code' => $res['pagadito_response']['data']['response_code'],
-          'response_message' => $res['pagadito_response']['data']['response_message'],
-          'request_date' => $res['pagadito_response']['data']['request_date'],
-          'paymentDate' => $res['pagadito_response']['data']['customer_reply']['paymentDate'],
-          'authorization' => $res['pagadito_response']['data']['customer_reply']['authorization']
+          'response_code' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_code'] : $res['pagadito_response']['response_code'],
+          'response_message' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_message'] : $res['pagadito_response']['response_message'],
+          'request_date' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_date'] : $res['pagadito_response']['request_date'],
+          'paymentDate' => isset($res['pagadito_response']['customer_reply']) ? $res['pagadito_response']['customer_reply']['paymentDate'] : (isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['paymentDate'] : $res['pagadito_response']['paymentDate']),
+          'authorization' => isset($res['pagadito_response']['customer_reply']) ? $res['pagadito_response']['customer_reply']['authorization'] : (isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['authorization'] : $res['pagadito_response']['authorization'])
         );
         $updateSymbol = ['%d', '%s', '%s', '%s', '%s', '%s'];
       } else {
         $update_data = array(
           'http_code' => 200,
-          'response_code' => $res['pagadito_response']['data']['response_code'],
-          'response_message' => $res['pagadito_response']['data']['response_message'],
-          'request_date' => $res['pagadito_response']['data']['request_date'],
-          'paymentDate' => $res['pagadito_response']['data']['request_date']
+          'response_code' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_code'] : $res['pagadito_response']['response_code'],
+          'response_message' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_message'] : $res['pagadito_response']['response_message'],
+          'request_date' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_date'] : $res['pagadito_response']['request_date'],
+          'paymentDate' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_date'] : $res['pagadito_response']['request_date']
         );
         $updateSymbol = ['%d', '%s', '%s', '%s', '%s'];
       }
     } else {
       $update_data = array(
         'http_code' => $res['pagadito_http_code'],
-        'response_code' => $res['pagadito_response']['data']['response_code'],
-        'response_message' => $res['pagadito_response']['data']['response_message'],
-        'request_date' => $res['pagadito_response']['data']['request_date']
+        'response_code' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_code'] : $res['pagadito_response']['response_code'],
+        'response_message' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_message'] : $res['pagadito_response']['response_message'],
+        'request_date' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_date'] : $res['pagadito_response']['request_date']
       );
       $updateSymbol = ['%d', '%s', '%s', '%s'];
     }
@@ -218,29 +218,32 @@ class PagaditoHandler
   public function setupPayer($params, $client_id, $ip)
   {
     global $wpdb;
-    $Pagadito = new Pagadito(false);
+    $Pagadito = new Pagadito();
     $res = $Pagadito->setupPayer($params);
     $environment = $this->testmode === 'yes' ? 'sandbox' : 'production';
-    $order_data = [
-      'client_id' => $client_id,
-      'amount' => $params['transaction']['transactionDetails'][0]['amount'],
-      'currency' => $params['transaction']['currencyId'],
-      'merchantReferenceId' => $params['transaction']['merchantTransactionId'],
-      'firstName' => $params['card']['firstName'],
-      'lastName' => $params['card']['lastName'],
-      'ip' => $ip,
-      'cod_country' => $params['card']['billingAddress']['countryId'],
-      'environment' => $environment,
-      'token' => $res['pagadito_response']['token'],
-      'request_id' => $res['pagadito_response']['request_id'],
-      'referenceId' => $res['pagadito_response']['referenceId'],
-      'email' => $params['card']['email'],
-      'phone' => $params['card']['billingAddress']['phone'],
-      'address' => $params['card']['billingAddress']['line1'],
-      'city' => $params['card']['billingAddress']['city'],
-      'postalCode' => $params['card']['billingAddress']['zip'],
-    ];
-    $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $order_data);
+
+    if ($res['pagadito_http_code'] == 200) {
+      $order_data = [
+        'client_id' => $client_id,
+        'amount' => $params['transaction']['transactionDetails'][0]['amount'],
+        'currency' => $params['transaction']['currencyId'],
+        'merchantReferenceId' => $params['transaction']['merchantTransactionId'],
+        'firstName' => $params['card']['firstName'],
+        'lastName' => $params['card']['lastName'],
+        'ip' => $ip,
+        'cod_country' => $params['card']['billingAddress']['countryId'],
+        'environment' => $environment,
+        'token' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['token'] : $res['pagadito_response']['token'],
+        'request_id' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_id'] : $res['pagadito_response']['request_id'],
+        'referenceId' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['referenceId'] : $res['pagadito_response']['referenceId'],
+        'email' => $params['card']['email'],
+        'phone' => $params['card']['billingAddress']['phone'],
+        'address' => $params['card']['billingAddress']['line1'],
+        'city' => $params['card']['billingAddress']['city'],
+        'postalCode' => $params['card']['billingAddress']['zip']
+      ];
+      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $order_data);
+    }
 
     return $res;
   }

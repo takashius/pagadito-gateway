@@ -123,12 +123,7 @@ class Pagadito
 
         if (curl_errno($ch)) {
             throw new Exception('Error obtaining token: ' . curl_error($ch));
-        } else {
-            echo 'HTTP Code: ' . $info['http_code'] . "\n";
-            echo 'Response: ' . $curl_response . "\n";
         }
-
-        curl_close($ch);
 
         if ($info["http_code"] == 200) {
             $response = json_decode($curl_response, true);
@@ -154,7 +149,9 @@ class Pagadito
                 return $token;
             }
         }
-        return $this->getToken();
+        $token = $this->getToken();
+        $this->curlObj = curl_init();
+        return $token;
     }
 
     private function parseRequest($formData)
