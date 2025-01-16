@@ -151,8 +151,14 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   public function payment_scripts()
   {
     if (is_checkout()) {
+      if (!function_exists('get_plugin_data')) {
+        require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+      }
+      $plugin_file_path = plugin_dir_path(__FILE__) . '../pagadito-gateway.php';
+      $plugin_data = get_plugin_data($plugin_file_path);
+      $plugin_version = $plugin_data['Version'];
 
-      wp_register_script('custom-payment-script', plugin_dir_url(__FILE__) . '../design/custom-payment-script.js', array('jquery'), '1.0.1', true);
+      wp_register_script('custom-payment-script', plugin_dir_url(__FILE__) . '../design/custom-payment-script.js', array('jquery'), $plugin_version, true);
 
       wp_localize_script('custom-payment-script', 'data', array(
         'cart_total' => WC()->cart->get_cart_contents_total(),
