@@ -25,51 +25,51 @@
 </body>
 
 <script type="text/javascript">
-  var token =
-    "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
+var token =
+  "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
 
-  var payload = {
-    token: localStorage.getItem('transactionToken'),
-    transactionId: localStorage.getItem('id_transaction'),
-  };
+var payload = {
+  token: localStorage.getItem('transactionToken'),
+  transactionId: localStorage.getItem('id_transaction'),
+};
 
-  $(document).ready(function() {
-    function sendPaymentStatus(status, authorization = null, request_id = null) {
-      window.parent.postMessage({
-        paymentSuccess: status,
-        authorization: authorization,
-        request_id: request_id
-      }, '*');
-    }
-    $.ajax({
-      url: "<? echo get_site_url() ?>/wp-json/pagadito/v1/validate_card",
-      method: "POST",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/json",
-      },
-      data: JSON.stringify(payload),
-      success: function(response) {
-        console.log(response);
-        if (response.pagadito_http_code == 200) {
-          if (response.pagadito_response.response_code == 'PG200-00') {
-            sendPaymentStatus(true, response.pagadito_response.customer_reply.authorization, response
-              .pagadito_response.request_id);
-          } else {
-            sendPaymentStatus(false);
-          }
+$(document).ready(function() {
+  function sendPaymentStatus(status, authorization = null, request_id = null) {
+    window.parent.postMessage({
+      paymentSuccess: status,
+      authorization: authorization,
+      request_id: request_id
+    }, '*');
+  }
+  $.ajax({
+    url: "/wp-json/pagadito/v1/validate_card",
+    method: "POST",
+    headers: {
+      Authorization: token,
+      "Content-Type": "application/json",
+    },
+    data: JSON.stringify(payload),
+    success: function(response) {
+      console.log(response);
+      if (response.pagadito_http_code == 200) {
+        if (response.pagadito_response.response_code == 'PG200-00') {
+          sendPaymentStatus(true, response.pagadito_response.customer_reply.authorization, response
+            .pagadito_response.request_id);
         } else {
-          console.log(response.pagadito_response.customer_reply);
           sendPaymentStatus(false);
         }
-      },
-      error: function(jqXHR, textStatus, errorThrown) {
-        console.log("Error:", jqXHR.responseText);
+      } else {
+        console.log(response.pagadito_response.customer_reply);
         sendPaymentStatus(false);
-      },
-    });
-
+      }
+    },
+    error: function(jqXHR, textStatus, errorThrown) {
+      console.log("Error:", jqXHR.responseText);
+      sendPaymentStatus(false);
+    },
   });
+
+});
 </script>
 
 </html>
