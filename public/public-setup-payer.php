@@ -65,8 +65,7 @@
 
   <script>
   // Token de autorización (reemplazar con un token válido)
-  // const urlBase = "https://redwtele.com/wp-json/pagadito/v1";
-  const urlBase = "http://testwoocommerce.local/wp-json/pagadito/v1";
+  const urlBase = "<? echo get_site_url() ?>/wp-json/pagadito/v1";
   var token =
     "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
   var testData = {
@@ -96,7 +95,7 @@
     expirationDate: testData.expirationDate,
     referenceId: "",
     request_id: "",
-    returnUrl: "http://testwoocommerce.local/pagadito-test-3ds/return",
+    returnUrl: "<? echo get_site_url() ?>/pagadito-test-3ds/return",
   };
 
   $(document).ready(function() {
