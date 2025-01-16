@@ -55,7 +55,7 @@ class ErPagadito_gateway_Email_Extra
       $product_id = $item->get_product_id();
 
       switch ($product_id) {
-        case 297:
+        case $productos['VPX_VIRTUAL']:
           if (!$itemPrinted[1]) {
             $itemPrinted[1] = true; ?>
             <h2>Características esenciales de tu producto: </h2>
@@ -93,7 +93,7 @@ class ErPagadito_gateway_Email_Extra
           <?php
           }
           break;
-        case 636:
+        case $productos['DESARROLLO_SOFTWARE']:
           if (!$itemPrinted[2]) {
             $itemPrinted[2] = true; ?>
             <h2>Características esenciales de tu producto: </h2>
@@ -138,8 +138,8 @@ class ErPagadito_gateway_Email_Extra
           <?php
           }
           break;
-        case 259:
-        case 8419:
+        case $productos['CALLING_CARD']:
+        case $productos['RECARGAS']:
         default:
           if (!$itemPrinted[0]) {
             $itemPrinted[0] = true; ?>
