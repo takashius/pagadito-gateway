@@ -163,12 +163,34 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
       wc_add_notice('El número de la <b>tarjeta de crédito</b> es requerido', 'error');
       return false;
     }
+    if (!preg_match('/^\d{13,16}$/', $_POST['cc-number'])) {
+      wc_add_notice('El número de la <b>tarjeta de crédito</b> no es válido', 'error');
+      return false;
+    }
     if (empty($_POST['cc-expiration'])) {
       wc_add_notice('El vencimiento de la <b>tarjeta de crédito</b> es requerido', 'error');
       return false;
     }
+
+    $expiration = explode('/', $_POST['cc-expiration']);
+    if (count($expiration) !== 2 || !preg_match('/^(0[1-9]|1[0-2])$/', $expiration[0]) || !preg_match('/^\d{4}$/', $expiration[1])) {
+      wc_add_notice('El vencimiento de la <b>tarjeta de crédito</b> debe tener el formato MM/YYYY y un mes válido', 'error');
+      return false;
+    }
+
+    $currentYear = date('Y');
+    $currentMonth = date('m');
+    if ($expiration[1] < $currentYear || ($expiration[1] == $currentYear && $expiration[0] < $currentMonth)) {
+      wc_add_notice('El vencimiento de la <b>tarjeta de crédito</b> no puede ser una fecha pasada', 'error');
+      return false;
+    }
+
     if (empty($_POST['cc-cvv'])) {
       wc_add_notice('El código de seguridad de la <b>tarjeta de crédito</b> es requerido', 'error');
+      return false;
+    }
+    if (!preg_match('/^\d{3}$/', $_POST['cc-cvv'])) {
+      wc_add_notice('El código de seguridad de la <b>tarjeta de crédito</b> debe ser un número de 3 dígitos', 'error');
       return false;
     }
     return true;
