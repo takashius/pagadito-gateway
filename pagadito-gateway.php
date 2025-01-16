@@ -125,3 +125,12 @@ function template_redirect_to_custom_pages()
   }
 }
 add_action('template_redirect', 'template_redirect_to_custom_pages');
+
+function enqueue_custom_styles_and_scripts()
+{
+  if (is_checkout()) {
+    wp_enqueue_style('custom-form-styles', plugin_dir_url(__FILE__) . 'design/custom-form.css', array(), '1.0.0');
+    wp_enqueue_script('sweetalert', 'https://cdn.jsdelivr.net/npm/sweetalert2@11');
+  }
+}
+add_action('wp_enqueue_scripts', 'enqueue_custom_styles_and_scripts');

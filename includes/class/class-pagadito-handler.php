@@ -4,19 +4,21 @@ require_once __DIR__ . '/../lib/class.pagadito.php';
 
 class PagaditoHandler
 {
-  private $testmode;
+  private $testMode;
   private $client_id;
   private $client_secret;
+  private $isAdmin;
 
-  public function __construct($testmode = false)
+  public function __construct($isAdmin, $testMode = false)
   {
-    $this->testmode = $testmode ? 'yes' : 'no';
+    $this->isAdmin = $isAdmin;
+    $this->testMode = $testMode ? 'yes' : 'no';
     $this->initializeKeys();
   }
 
   private function initializeKeys()
   {
-    if ($this->testmode === 'yes') {
+    if ($this->testMode === 'yes') {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
       $this->client_id = 'd19e9090-e1d6-4466-9d53-c582afe2bdee';
       $this->client_secret = 'ZGRhNmQ5YjYtOGM5YS00MThiLTgxYzgtOGNmNzQ2YTExZTFm';
@@ -188,7 +190,9 @@ class PagaditoHandler
 
     $query = $wpdb->prepare("SELECT * FROM {$wpdb->prefix}er_pagadito_operations WHERE token = %s", $token);
     $updated_record = $wpdb->get_row($query, ARRAY_A);
-    $this->handleWooCommerce($updated_record);
+    if (!$this->isAdmin) {
+      $this->handleWooCommerce($updated_record);
+    }
   }
 
   private function setOrderBilling($order, $data)
@@ -220,7 +224,7 @@ class PagaditoHandler
     global $wpdb;
     $Pagadito = new Pagadito();
     $res = $Pagadito->setupPayer($params);
-    $environment = $this->testmode === 'yes' ? 'sandbox' : 'production';
+    $environment = $this->testMode === 'yes' ? 'sandbox' : 'production';
 
     if ($res['pagadito_http_code'] == 200) {
       $order_data = [
@@ -237,6 +241,7 @@ class PagaditoHandler
         'request_id' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_id'] : $res['pagadito_response']['request_id'],
         'referenceId' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['referenceId'] : $res['pagadito_response']['referenceId'],
         'email' => $params['card']['email'],
+        'origin' => $this->isAdmin ? 'web' : 'api',
         'phone' => $params['card']['billingAddress']['phone'],
         'address' => $params['card']['billingAddress']['line1'],
         'city' => $params['card']['billingAddress']['city'],

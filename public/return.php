@@ -13,18 +13,11 @@
 <body>
   <div class="row">
     <div class="container">
-      <div class="row bg-primary">
-        <div class="col text-center">
-          <h1>Challenge enviado</h1>
+      <div id="loader" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="sr-only">Loading...</span>
         </div>
-      </div>
-      <div id="step1" class="row px-4 py-5">
-
-        <button class="btn btn-primary" type="button" disabled>
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          Procesando Autorizacion...
-        </button>
-
+        <p>Cargando...</p>
       </div>
     </div>
   </div> <!-- fin de container -->
@@ -41,9 +34,15 @@ var payload = {
 };
 
 $(document).ready(function() {
+  function sendPaymentStatus(status, authorization = null, request_id = null) {
+    window.parent.postMessage({
+      paymentSuccess: status,
+      authorization: authorization,
+      request_id: request_id
+    }, '*');
+  }
   $.ajax({
-    // url: "https://redwtele.com/wp-json/pagadito/v1/validate_card",
-    url: "http://testwoocommerce.local/wp-json/pagadito/v1/validate_card",
+    url: "<? echo get_site_url() ?>/wp-json/pagadito/v1/validate_card",
     method: "POST",
     headers: {
       Authorization: token,
@@ -54,27 +53,19 @@ $(document).ready(function() {
       console.log(response);
       if (response.pagadito_http_code == 200) {
         if (response.pagadito_response.response_code == 'PG200-00') {
-          let msj = "Pago procesado con exito.\n"
-
-          msj += "\n\t Autorizacion: " + response.pagadito_response.customer_reply.authorization
-          msj += "\n\t ID Transaccion: " + response.pagadito_response.customer_reply.merchantTransactionId
-          msj += "\n\t Total: " + response.pagadito_response.customer_reply.totalAmount
-
-          alert(msj);
+          sendPaymentStatus(true, response.pagadito_response.customer_reply.authorization, response
+            .pagadito_response.request_id);
         } else {
-          alert("no se pudo procesar el pago");
+          sendPaymentStatus(false);
         }
       } else {
         console.log(response.pagadito_response.customer_reply);
-
-        let msj = "No se pudo procesar el pago: \n"
-        msj += "\n\t " + response.pagadito_response.customer_reply
-        alert(msj);
+        sendPaymentStatus(false);
       }
     },
     error: function(jqXHR, textStatus, errorThrown) {
       console.log("Error:", jqXHR.responseText);
-      alert("Error en la operación. Revisa la consola para más detalles.");
+      sendPaymentStatus(false);
     },
   });
 

@@ -148,7 +148,22 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   /*
     * Custom CSS and JS, in most cases required only when you decided to go with a custom credit card form
     */
-  public function payment_scripts() {}
+  public function payment_scripts()
+  {
+    if (is_checkout()) {
+
+      wp_register_script('custom-payment-script', plugin_dir_url(__FILE__) . '../design/custom-payment-script.js', array('jquery'), '1.0.0', true);
+
+      wp_localize_script('custom-payment-script', 'data', array(
+        'cart_total' => WC()->cart->get_cart_contents_total(),
+        'site_url' => get_site_url(),
+        'user_ip' => $this->get_ip_address() ? $this->get_ip_address() : "208.87.3.109"
+      ));
+
+      wp_enqueue_script('custom-payment-script');
+    }
+  }
+
 
   /*
      * Fields validation, more in Step 5
@@ -171,6 +186,10 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
       wc_add_notice('El código de seguridad de la <b>tarjeta de crédito</b> es requerido', 'error');
       return false;
     }
+    if (empty($_POST['cc_authorization'])) {
+      wc_add_notice('Debe validar su pago previamente', 'error');
+      return false;
+    }
     return true;
   }
 
@@ -181,103 +200,38 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   {
     @ini_set('display_errors', 1);
     global $woocommerce;
-    global $wpdb;
-    $order = new WC_Order($order_id);
+    $order = wc_get_order($order_id);
 
-    $amount = $order->get_total();
-    $ip = $this->get_ip_address() ? $this->get_ip_address() : "172.217.8.78";
-    $currency = get_woocommerce_currency();
-    $firstName = $_POST['billing_first_name'];
-    $lastName = $_POST['billing_last_name'];
-    $holderName = $_POST['cc-name'];
-    $email = $_POST['billing_email'];
-    $phone = $_POST['billing_phone'];
-    $address_1 = $_POST['billing_address_1'];
-    $address_2 = $_POST['billing_address_2'];
-    $city = $_POST['billing_city'];
-    $state = $_POST['billing_state'];
-    $country = $_POST['billing_country'];
-    $postalCode = $_POST['billing_postcode'];
+    $request_id = sanitize_text_field($_POST['cc_request_id']);
+    $authorization = sanitize_text_field($_POST['cc_authorization']);
 
-    $cardNumber = $_POST['cc-number'];
-    $cvv = $_POST['cc-cvv'];
-    $expiryMonth = substr($_POST['cc-expiration'], 0, 2);
-    $expiryYear = substr($_POST['cc-expiration'], 3, 4);
+    // Actualiza el estado del pedido a completado
+    $order->update_status('completed', 'Pedido completado automáticamente');
 
-    $transaction = array(
-      'merchantTransactionId' => $order_id,
-      'currencyId' => $currency,
-      'transactionDetails' => array()
+    // Establecer el método de pago
+    $order->set_payment_method('er_pagadito');
+    $order->set_payment_method_title('Pagadito');
+
+    // Añadir metadatos al pedido
+    $order->update_meta_data('request_id', $request_id);
+    $order->update_meta_data('authorization', $authorization);
+
+    // Marcar el pedido como completado
+    $order->payment_complete();
+
+    // Calcular totales y guardar el pedido
+    $order->calculate_totals();
+    $order->save();
+
+    // Vaciar el carrito
+    $woocommerce->cart->empty_cart();
+
+    // Redirección a la página de agradecimiento
+    return array(
+      'result' => 'success',
+      'redirect' => $this->get_return_url($order)
     );
-
-    foreach ($order->get_items(array('line_item', 'fee')) as $item) {
-      $itemProduct =  array(
-        'quantity' => $item['qty'],
-        'description' => $item['name'],
-        'amount' => $order->get_item_subtotal($item, false),
-      );
-      $transaction['transactionDetails'][] = $itemProduct;
-    }
-
-    require_once __DIR__ . '/pagadito-call.php';
-
-    if ($res['pagadito_http_code'] !== 200) {
-      wc_add_notice($res['pagadito_response']['response_code'] . " " . $res['pagadito_response']['response_message'], 'error');
-      $array = array(
-        "amount" => (float)$amount,
-        "currency" => $currency,
-        "merchantReferenceId" => $order_id,
-        "firstName" => $firstName,
-        "lastName" => $lastName,
-        "ip" => $ip,
-        "http_code" => $res['pagadito_http_code'],
-        "response_code" => $res['pagadito_response']['response_code'],
-        "response_message" => $res['pagadito_response']['response_message'],
-        "request_date" => $res['pagadito_response']['request_date'],
-        "origin" => "web"
-      );
-      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
-
-      return array(
-        'result' => 'error'
-      );
-    } else {
-      $order->set_status('wc-completed');
-      $order->set_payment_method('er_pagadito');
-      $order->add_meta_data('request_id', $res['pagadito_response']['request_id']);
-      $order->add_meta_data('authorization', $res['pagadito_response']['customer_reply']['authorization']);
-      $order->payment_complete();
-      $order->calculate_totals();
-      $order->save();
-
-      $array = array(
-        "amount" => (float)$amount,
-        "currency" => $currency,
-        "merchantReferenceId" => $order_id,
-        "firstName" => $firstName,
-        "lastName" => $lastName,
-        "ip" => $ip,
-        "authorization" => $res['pagadito_response']['customer_reply']['authorization'],
-        "http_code" => $res['pagadito_http_code'],
-        "response_code" => $res['pagadito_response']['response_code'],
-        "response_message" => $res['pagadito_response']['response_message'],
-        "request_date" => $res['pagadito_response']['request_date'],
-        "paymentDate" => $res['pagadito_response']['customer_reply']['paymentDate'],
-        "origin" => "web"
-      );
-      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $array);
-
-      // Remove cart
-      $woocommerce->cart->empty_cart();
-      // Return thankyou redirect
-      return array(
-        'result' => 'success',
-        'redirect' => $this->get_return_url($order)
-      );
-    }
   }
-
-
 
   function get_ip_address()
   {

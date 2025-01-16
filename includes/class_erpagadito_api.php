@@ -148,9 +148,9 @@ function save_product($data)
 
   // Verificar si el token es de sandbox
   if ($token === $client->sandbox_token) {
-    $handler = new PagaditoHandler(true);
+    $handler = new PagaditoHandler($client->role == 'admin', true);
   } else {
-    $handler = new PagaditoHandler();
+    $handler = new PagaditoHandler($client->role == 'admin');
   }
 
   $validateData = validateSaveProductRequest($params);
@@ -346,9 +346,9 @@ function setup_payer_endpoint($data)
 
   // Instanciar PagaditoHandler y ejecutar setupPayer
   if ($token === $client->sandbox_token) {
-    $handler = new PagaditoHandler(true);
+    $handler = new PagaditoHandler($client->role == 'admin', true);
   } else {
-    $handler = new PagaditoHandler();
+    $handler = new PagaditoHandler($client->role == 'admin');
   }
   $res = $handler->setupPayer($params, $client_id, sanitize_text_field($data['ip']));
 
@@ -380,9 +380,9 @@ function customer_endpoint($data)
 
   // Verificar si el token es de sandbox
   if ($token === $client->sandbox_token) {
-    $handler = new PagaditoHandler(true);
+    $handler = new PagaditoHandler($client->role == 'admin', true);
   } else {
-    $handler = new PagaditoHandler();
+    $handler = new PagaditoHandler($client->role == 'admin');
   }
 
   if (!isset($params['token']) || !is_string($params['token']) || empty($params['token'])) {
@@ -425,9 +425,9 @@ function validate_card_endpoint($data)
 
   // Verificar si el token es de sandbox
   if ($token === $client->sandbox_token) {
-    $handler = new PagaditoHandler(true);
+    $handler = new PagaditoHandler($client->role == 'admin', true);
   } else {
-    $handler = new PagaditoHandler();
+    $handler = new PagaditoHandler($client->role == 'admin');
   }
 
   if (!isset($params['token']) || !is_string($params['token']) || empty($params['token'])) {
