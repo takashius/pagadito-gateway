@@ -152,7 +152,7 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   {
     if (is_checkout()) {
 
-      wp_register_script('custom-payment-script', plugin_dir_url(__FILE__) . '../design/custom-payment-script.js', array('jquery'), '1.0.0', true);
+      wp_register_script('custom-payment-script', plugin_dir_url(__FILE__) . '../design/custom-payment-script.js', array('jquery'), '1.0.1', true);
 
       wp_localize_script('custom-payment-script', 'data', array(
         'cart_total' => WC()->cart->get_cart_contents_total(),

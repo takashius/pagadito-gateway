@@ -104,8 +104,6 @@ jQuery(document).ready(function ($) {
 
     if (ccName && ccNumberValid && ccExpirationValid && ccCvvValid) {
       setupPayer();
-      // Habilitar el botón de submit
-      // $('button[type="submit"]').prop('disabled', false);
     } else {
       Swal.fire({
         icon: 'error',
@@ -123,7 +121,25 @@ jQuery(document).ready(function ($) {
     $.each(formData, function (index, field) {
       formObject[field.name] = field.value;
     });
-    // console.log(JSON.stringify(formObject, false, 2));
+    if (!formObject.billing_first_name ||
+      !formObject.billing_last_name ||
+      !formObject.billing_email ||
+      !formObject.billing_phone ||
+      !formObject.billing_address_1 ||
+      !formObject.billing_city ||
+      !formObject.billing_state ||
+      !formObject.billing_postcode ||
+      !formObject.billing_country
+    ) {
+      $('#loader').fadeOut('fast');
+      $('.form-custom-pagadito').fadeIn('slow');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Debe completar el formulario con sus datos personales antes de poder realizar el pago.'
+      });
+      return false;
+    }
     paymentData = {
       amount: data.cart_total,
       currency: "USD",
@@ -132,10 +148,10 @@ jQuery(document).ready(function ($) {
       lastName: formObject.billing_last_name,
       email: formObject.billing_email,
       phone: formObject.billing_phone,
-      address: formObject.shipping_address_1,
-      postalCode: formObject.shipping_postcode,
-      city: formObject.shipping_city,
-      state: formObject.shipping_state,
+      address: formObject.billing_address_1,
+      postalCode: formObject.billing_postcode,
+      city: formObject.billing_city,
+      state: formObject.billing_state,
       country: "604",
       ip: data.user_ip,
       holderName: formObject['cc-name'],
@@ -262,6 +278,14 @@ jQuery(document).ready(function ($) {
                   form_step_up_form_jwt_input.value =
                     response.pagadito_response.data.customer_reply.accessToken;
                   form_step_up_form.submit();
+                } else {
+                  $('#loader').fadeOut('fast');
+                  $('.form-custom-pagadito').fadeIn('slow');
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'Error en la operación de cobro',
+                    text: response.pagadito_response.data.response_message
+                  });
                 }
               },
               error: function (jqXHR, textStatus, errorThrown) {
