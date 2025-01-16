@@ -143,7 +143,7 @@ jQuery(document).ready(function ($) {
     paymentData = {
       amount: data.cart_total,
       currency: "USD",
-      mechantReferenceId: formObject['woocommerce-process-checkout-nonce'],
+      mechantReferenceId: data.uniq_hash,
       firstName: formObject.billing_first_name,
       lastName: formObject.billing_last_name,
       email: formObject.billing_email,
@@ -162,6 +162,7 @@ jQuery(document).ready(function ($) {
       request_id: "",
       returnUrl: `${data.site_url}/pagadito-test-3ds/return`,
     };
+    $('#cc_merchant_reference_id').val(data.uniq_hash);
 
     $.ajax({
       url: urlBase + "/setup_payer",

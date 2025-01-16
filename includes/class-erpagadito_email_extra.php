@@ -33,7 +33,8 @@ class ErPagadito_gateway_Email_Extra
   public static function updateData($order, $sent_to_admin, $plain_text)
   {
     $authorization = $order->get_meta('authorization');
-    $request_id = $order->get_meta('request_id'); ?>
+    $request_id = $order->get_meta('request_id');
+?>
     <h2>Pagadito </h2>
     <ul>
       <li><strong>Id de Transacci&oacute;n</strong> <?php echo $request_id ?></li>

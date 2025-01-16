@@ -158,10 +158,21 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
       $plugin_data = get_plugin_data($plugin_file_path);
       $plugin_version = $plugin_data['Version'];
 
+      $cart_contents = WC()->cart->get_cart();
+      $user_id = get_current_user_id();
+      $timestamp = time();
+      $unique_data = array(
+        'cart_contents' => $cart_contents,
+        'user_id' => $user_id,
+        'timestamp' => $timestamp
+      );
+      $cart_hash = md5(json_encode($unique_data));
+
       wp_register_script('custom-payment-script', plugin_dir_url(__FILE__) . '../design/custom-payment-script.js', array('jquery'), $plugin_version, true);
 
       wp_localize_script('custom-payment-script', 'data', array(
         'cart_total' => WC()->cart->get_cart_contents_total(),
+        'uniq_hash' => $cart_hash,
         'site_url' => get_site_url(),
         'user_ip' => $this->get_ip_address() ? $this->get_ip_address() : "208.87.3.109"
       ));
@@ -206,21 +217,23 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
   {
     @ini_set('display_errors', 1);
     global $woocommerce;
-    $order = wc_get_order($order_id);
+    $order = new WC_Order($order_id);
 
     $request_id = sanitize_text_field($_POST['cc_request_id']);
     $authorization = sanitize_text_field($_POST['cc_authorization']);
+    $merchant_reference_id = sanitize_text_field($_POST['cc_merchant_reference_id']);
 
     // Actualiza el estado del pedido a completado
-    $order->update_status('completed', 'Pedido completado automáticamente');
+    $order->set_status('completed', 'Pedido completado automáticamente');
 
     // Establecer el método de pago
     $order->set_payment_method('er_pagadito');
     $order->set_payment_method_title('Pagadito');
 
     // Añadir metadatos al pedido
-    $order->update_meta_data('request_id', $request_id);
-    $order->update_meta_data('authorization', $authorization);
+    $order->add_meta_data('request_id', $request_id);
+    $order->add_meta_data('authorization', $authorization);
+    $order->add_meta_data('merchant_reference_id', $merchant_reference_id);
 
     // Marcar el pedido como completado
     $order->payment_complete();

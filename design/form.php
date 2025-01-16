@@ -47,6 +47,7 @@
   </div>
   <input id="cc_request_id" type="hidden" name="cc_request_id" value="" />
   <input id="cc_authorization" type="hidden" name="cc_authorization" value="" />
+  <input id="cc_merchant_reference_id" type="hidden" name="cc_merchant_reference_id" value="" />
   <button type="button" class="button alt  form-custom-pagadito" name="validate_payer" id="validate_payer"
     value="Validar pago" data-value="Validar pago">Validar pago</button>
 </div>
