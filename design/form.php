@@ -6,7 +6,6 @@
     </div>
     <p>Cargando...</p>
   </div>
-
   <iframe id="step_up_iframe_pagadito" style="border: none; display: none; height: 105vh;" height="400px"
     name="stepUpIframe"></iframe>
 

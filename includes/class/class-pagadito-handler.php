@@ -121,9 +121,12 @@ class PagaditoHandler
 
     $order = wc_create_order();
     $order->set_created_via('store-api');
-    //LOCAL 62
-    //PRODUCTION 269
-    $product = new WC_Product_Variable(269);
+    $local_product_id = 62;
+    $production_product_id = 269;
+    $is_local = (get_site_url() == 'http://testwoocommerce.local');
+    $product_id = $is_local ? $local_product_id : $production_product_id;
+
+    $product = new WC_Product_Variable($product_id);
     $product->set_regular_price((float)$data['amount']);
     $product->set_price((float)$data['amount']);
     $product->save();
