@@ -160,7 +160,7 @@ jQuery(document).ready(function ($) {
       expirationDate: formObject['cc-expiration'],
       referenceId: "",
       request_id: "",
-      returnUrl: `${formObject.wc_order_attribution_session_entry}pagadito-test-3ds/return`,
+      returnUrl: `${data.site_url}/pagadito-test-3ds/return`,
     };
 
     $.ajax({
