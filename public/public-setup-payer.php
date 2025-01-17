@@ -72,7 +72,7 @@
         <label for="amountInputForm">Cliente</label>
         <select class="form-control" id="clientToken">
           <option
-            value="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NCwiaXNzdWVkX2F0IjoxNzM3MDg4NDkwfQ.Qxuna-7qew5wpBJW0_SBq6O8h38276R5ZMOFxB4tPcs">
+            value="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NCwiaXNzdWVkX2F0IjoxNzM3MDk0OTk2fQ.xz6RiAh6lvNBai-dPtwDxVzmPBR1Pvpo88rFma2_otg">
             Ejemplo 1</option>
           <option
             value="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NSwiaXNzdWVkX2F0IjoxNzM3MDg4NTkyfQ._19nbtkJ5sK9BzZurStI_DOWQ0Quofay79elVC_9OqQ">
@@ -125,7 +125,7 @@
     expirationDate: testData.expirationDate,
     referenceId: "",
     request_id: "",
-    returnUrl: "<? echo get_site_url()?>/pagadito-test-3ds/return",
+    returnUrl: "<? echo get_site_url() ?>/pagadito-test-3ds/return",
   };
 
   $(document).ready(function() {
