@@ -166,7 +166,7 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
         'user_id' => $user_id,
         'timestamp' => $timestamp
       );
-      $cart_hash = "REDW_" . md5(json_encode($unique_data));
+      $cart_hash = "REDW-" . md5(json_encode($unique_data));
 
       wp_register_script('custom-payment-script', plugin_dir_url(__FILE__) . '../design/custom-payment-script.js', array('jquery'), $plugin_version, true);
 
