@@ -312,6 +312,12 @@ function setup_payer_endpoint($data)
     return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
   }
 
+  if ($client->role == 'admin') {
+    $mechantReferenceId = $data['mechantReferenceId'];
+  } else {
+    $mechantReferenceId = $client->abbr_name . '-' . $data['mechantReferenceId'];
+  }
+
   $params = [
     "card" => [
       "number" => sanitize_text_field($data['cardNumber']),
@@ -332,7 +338,7 @@ function setup_payer_endpoint($data)
     ],
     'returnUrl' => sanitize_text_field($data['returnUrl']),
     "transaction" => [
-      "merchantTransactionId" => sanitize_text_field($data['mechantReferenceId']),
+      "merchantTransactionId" => sanitize_text_field($mechantReferenceId),
       "currencyId" => sanitize_text_field($data['currency']),
       "transactionDetails" => [
         [

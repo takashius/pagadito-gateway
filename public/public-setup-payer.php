@@ -57,7 +57,7 @@
     <form id="setupPayerForm">
       <div class="form-group">
         <label for="cardNumber">Número de Tarjeta</label>
-        <input type="text" class="form-control" id="cardNumber" placeholder="4000000000002503" required>
+        <input type="text" class="form-control" id="cardNumber" placeholder="4456530000001005" required>
       </div>
       <div class="form-group">
         <label for="amountInputForm">Monto</label>
@@ -67,6 +67,17 @@
         <label for="referenceIdForm">ID de Referencia</label>
         <input type="text" class="form-control" id="referenceIdForm" placeholder="1188def5-c0ee-4586-aa51-499bab78efc4"
           required>
+      </div>
+      <div class="form-group">
+        <label for="amountInputForm">Cliente</label>
+        <select class="form-control" id="clientToken">
+          <option
+            value="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NCwiaXNzdWVkX2F0IjoxNzM3MDg4NDkwfQ.Qxuna-7qew5wpBJW0_SBq6O8h38276R5ZMOFxB4tPcs">
+            Ejemplo 1</option>
+          <option
+            value="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NSwiaXNzdWVkX2F0IjoxNzM3MDg4NTkyfQ._19nbtkJ5sK9BzZurStI_DOWQ0Quofay79elVC_9OqQ">
+            Ejemplo 2</option>
+        </select>
       </div>
       <button type="button" class="btn btn-primary btn-block" id="setupPayerBtn">Probar Setup Payer</button>
     </form>
@@ -84,10 +95,11 @@
   <script>
   // Token de autorización (reemplazar con un token válido)
   const urlBase = "/wp-json/pagadito/v1";
-  var token =
-    "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
+  let token =
+    'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NCwiaXNzdWVkX2F0IjoxNzM3MDg4NDkwfQ.Qxuna-7qew5wpBJW0_SBq6O8h38276R5ZMOFxB4tPcs';
+  let BearerToken = `Bearer ${token}`;
   var testData = {
-    number: "4000000000002503",
+    number: "4456530000001005",
     expirationDate: "01/2026",
     cvv: "123",
     cardHolderName: "JOHN DOE",
@@ -113,7 +125,7 @@
     expirationDate: testData.expirationDate,
     referenceId: "",
     request_id: "",
-    returnUrl: "/pagadito-test-3ds/return",
+    returnUrl: "<? echo get_site_url()?>/pagadito-test-3ds/return",
   };
 
   $(document).ready(function() {
@@ -125,12 +137,19 @@
       paymentData.cardNumber = $(this).val();
       localStorage.setItem("cardNumber", $(this).val());
     });
+
     $("#amountInputForm").on("change", function() {
       paymentData.amount = $(this).val();
-    })
+    });
+
     $("#referenceIdForm").on("change", function() {
       paymentData.mechantReferenceId = $(this).val();
-    })
+    });
+
+    $("#clientToken").on("change", function() {
+      token = $(this).val();
+      BearerToken = `Bearer ${token}`;
+    });
 
     $("#setupPayerBtn").click(function() {
       $("#loader").show();
@@ -140,7 +159,7 @@
         url: urlBase + "/setup_payer",
         method: "POST",
         headers: {
-          Authorization: token,
+          Authorization: BearerToken,
           "Content-Type": "application/json",
         },
         data: JSON.stringify(paymentData),
@@ -210,7 +229,7 @@
                 url: urlBase + "/customer",
                 method: "POST",
                 headers: {
-                  Authorization: token,
+                  Authorization: BearerToken,
                   "Content-Type": "application/json",
                 },
                 data: JSON.stringify({

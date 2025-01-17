@@ -20,16 +20,21 @@ class Clients
 
   public function createClient($data)
   {
-    $this->wpdb->insert(
+    $result = $this->wpdb->insert(
       $this->table,
       array(
         'name' => sanitize_text_field($data['name']),
+        'abbr_name' => sanitize_text_field($data['abbr_name']),
         'email' => sanitize_email($data['email']),
         'address' => sanitize_text_field($data['address']),
         'tax_id' => sanitize_text_field($data['tax_id']),
         'role' => isset($data['role']) ? sanitize_text_field($data['role']) : 'user',
       )
     );
+
+    if ($result === false) {
+      return array('client_id' => 0, 'error' => $this->wpdb->last_error);
+    }
 
     return array('client_id' => $this->wpdb->insert_id);
   }
@@ -40,6 +45,7 @@ class Clients
       $this->table,
       array(
         'name' => sanitize_text_field($data['name']),
+        'abbr_name' => sanitize_text_field($data['abbr_name']),
         'email' => sanitize_email($data['email']),
         'address' => sanitize_text_field($data['address']),
         'tax_id' => sanitize_text_field($data['tax_id']),

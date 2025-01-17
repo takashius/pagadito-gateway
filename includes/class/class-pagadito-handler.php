@@ -121,7 +121,7 @@ class PagaditoHandler
 
     $order = wc_create_order();
     $order->set_created_via('store-api');
-    $local_product_id = 62;
+    $local_product_id = 284;
     $production_product_id = 269;
     $is_local = (get_site_url() == 'http://testwoocommerce.local');
     $product_id = $is_local ? $local_product_id : $production_product_id;
@@ -260,7 +260,7 @@ class PagaditoHandler
   {
     $Pagadito = new Pagadito();
     $res = $Pagadito->setCustomer($params);
-    $this->handleSaveData($res, $params['token'], false);
+    $this->handleSaveData($res, $params['token']);
 
     return $res;
   }

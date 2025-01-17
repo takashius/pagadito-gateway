@@ -70,6 +70,7 @@ class ErPagadito_gateway_Activator
     $queryClients = 'CREATE TABLE ' . $tableClients . ' ('
       . '`ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,'
       . '`name` varchar(255) NOT NULL,'
+      . '`abbr_name` varchar(4) NOT NULL,'
       . '`email` varchar(255) NOT NULL,'
       . '`address` varchar(255) NOT NULL,'
       . '`tax_id` varchar(255) NOT NULL,'
