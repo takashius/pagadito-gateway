@@ -1,9 +1,10 @@
 jQuery(document).ready(function ($) {
   let paymentData = null;
+  let origin = null;
 
   const urlBase = `${data.site_url}/wp-json/pagadito/v1`;
   const token =
-    "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzMyODM1MjAwfQ.2B17dlF6oxxMBxfi85l5UzAdCa0xX9QQRLfeLccafw4";
+    "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaXNzdWVkX2F0IjoxNzM3NDA4MTE2fQ._Zx97kauurKlzz1yJ5ij93x4L6RK5sYFW3fCXGlC7EQ";
 
   $.fn.inputFilter = function (callback, errMsg) {
     return this.on("input keydown keyup mousedown mouseup select contextmenu drop focusout", function (e) {
@@ -190,6 +191,8 @@ jQuery(document).ready(function ($) {
             response.pagadito_response.token
           );
 
+          origin = response.pagadito_response.deviceDataCollectionUrl;
+
           var form = $("<form>", {
             method: "post",
             action: response.pagadito_response.deviceDataCollectionUrl,
@@ -232,7 +235,7 @@ jQuery(document).ready(function ($) {
     "message",
     function (event) {
       if (
-        event.origin === "https://centinelapistag.cardinalcommerce.com"
+        event.origin === "https://centinelapi.cardinalcommerce.com"
       ) {
         let rsp = JSON.parse(event.data);
 
