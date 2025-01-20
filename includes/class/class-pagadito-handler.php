@@ -38,14 +38,16 @@ class PagaditoHandler
     define("CLIENT_SECRET", $this->client_secret);
     define("CLIENT_TOKEN", $this->pagadito_token);
     define("CLIENT_TOKEN_EXPIRATION", $this->token_expiration);
+
     $this->Pagadito = new Pagadito();
+
     if ($this->Pagadito->getAuthToken() != $this->pagadito_token) {
       $clientUpdate = new Clients();
       $data = [
         'pagadito_token' => $this->Pagadito->getAuthToken(),
         'token_expiration' => $this->Pagadito->getExpiresToken()
       ];
-      $clientUpdate->setClientToken($this->client_id, $data);
+      $clientUpdate->setClientToken($this->client->ID, $data);
     }
   }
 

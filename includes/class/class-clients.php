@@ -75,17 +75,20 @@ class Clients
 
   public function setClientToken($id, $data)
   {
-    $this->wpdb->update(
-      $this->table,
-      array(
-        'pagadito_token' => sanitize_text_field($data['pagadito_token']),
-        'token_expiration' => sanitize_text_field($data['token_expiration']),
-        'updated_at' => current_time('mysql')
-      ),
-      array('ID' => intval($id))
+    $query = $this->wpdb->prepare(
+      "UPDATE {$this->table} SET
+        pagadito_token = %s,
+        token_expiration = %s,
+        updated_at = %s
+        WHERE ID = %d",
+      sanitize_text_field($data['pagadito_token']),
+      sanitize_text_field($data['token_expiration']),
+      current_time('mysql'),
+      intval($id)
     );
 
-    return $this->wpdb->affected_rows;
+    $result = $this->wpdb->query($query);
+    return $result !== false ? $this->wpdb->rows_affected : 0;
   }
 
   public function getClients($page = 1, $per_page = 10)
