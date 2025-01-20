@@ -32,7 +32,7 @@ class PagaditoHandler
     if ($this->testMode === 'yes') {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
     } else {
-      define("GATEWAY_URL", "https://hub.pagadito.com");
+      define("GATEWAY_URL", "https://hub.pagadito.com/api/v1/");
     }
     define("CLIENT_ID", $this->client_id);
     define("CLIENT_SECRET", $this->client_secret);
