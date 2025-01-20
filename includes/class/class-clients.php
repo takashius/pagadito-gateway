@@ -58,6 +58,36 @@ class Clients
     return $this->wpdb->affected_rows;
   }
 
+  public function setClientSecret($data)
+  {
+    $this->wpdb->update(
+      $this->table,
+      array(
+        'client_id' => sanitize_text_field($data['client_id']),
+        'client_secret' => sanitize_text_field($data['client_secret']),
+        'updated_at' => current_time('mysql')
+      ),
+      array('ID' => intval($data['id']))
+    );
+
+    return $this->wpdb->affected_rows;
+  }
+
+  public function setClientToken($id, $data)
+  {
+    $this->wpdb->update(
+      $this->table,
+      array(
+        'pagadito_token' => sanitize_text_field($data['pagadito_token']),
+        'token_expiration' => sanitize_text_field($data['token_expiration']),
+        'updated_at' => current_time('mysql')
+      ),
+      array('ID' => intval($id))
+    );
+
+    return $this->wpdb->affected_rows;
+  }
+
   public function getClients($page = 1, $per_page = 10)
   {
     $offset = ($page - 1) * $per_page;

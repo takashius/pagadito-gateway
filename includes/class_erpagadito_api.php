@@ -50,6 +50,10 @@ add_action('rest_api_init', function () {
     'methods' => 'PUT',
     'callback' => 'update_client_endpoint',
   ));
+  register_rest_route('pagadito/v1', '/clients/secret', array(
+    'methods' => 'PUT',
+    'callback' => 'update_client_secret',
+  ));
   register_rest_route('pagadito/v1', '/clients/(?P<id>\d+)', array(
     'methods' => 'GET',
     'callback' => 'get_client_endpoint',
@@ -197,6 +201,23 @@ function update_client_endpoint($data)
     $params = $data->get_json_params();
     $client_id = $data['id'];
     $updated = $clients->updateClient($client_id, $params);
+    return new WP_REST_Response(array('updated' => $updated), 200);
+  } catch (Exception $e) {
+    return new WP_REST_Response(array('message' => 'Error al actualizar el cliente', 'error' => $e->getMessage()), 500);
+  }
+}
+
+function update_client_secret($data)
+{
+  $client_id = validate_authorization($data);
+  if ($client_id instanceof WP_REST_Response) {
+    return $client_id;
+  }
+
+  try {
+    $clients = new Clients();
+    $params = $data->get_json_params();
+    $updated = $clients->setClientSecret($params);
     return new WP_REST_Response(array('updated' => $updated), 200);
   } catch (Exception $e) {
     return new WP_REST_Response(array('message' => 'Error al actualizar el cliente', 'error' => $e->getMessage()), 500);

@@ -1,115 +1,52 @@
 <?php
 
 require_once __DIR__ . '/../lib/class.pagadito.php';
+require_once __DIR__ . '/class-clients.php';
 
 class PagaditoHandler
 {
   private $testMode;
+  private $client;
   private $client_id;
   private $client_secret;
+  private $pagadito_token;
+  private $token_expiration;
   private $isAdmin;
+  private $Pagadito;
 
-  public function __construct($isAdmin, $testMode = false)
+  public function __construct($client, $testMode = false)
   {
-    $this->isAdmin = $isAdmin;
+    $this->client = $client;
     $this->testMode = $testMode ? 'yes' : 'no';
     $this->initializeKeys();
   }
 
   private function initializeKeys()
   {
+    $this->isAdmin = $this->client->role == 'admin' ? true : false;
+    $this->client_id = $this->client->client_id;
+    $this->client_secret = $this->client->client_secret;
+    $this->pagadito_token = $this->client->pagadito_token;
+    $this->token_expiration = $this->client->token_expiration;
+
     if ($this->testMode === 'yes') {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
-      $this->client_id = 'd19e9090-e1d6-4466-9d53-c582afe2bdee';
-      $this->client_secret = 'ZGRhNmQ5YjYtOGM5YS00MThiLTgxYzgtOGNmNzQ2YTExZTFm';
     } else {
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
-      $this->client_id = '663c2773-a145-4b84-8007-8ff273beec1a';
-      $this->client_secret = 'OWU4NzFkNjQtNjdkMC00N2Y2LTgyOGQtZTI5ZjI1MDg2MDIy';
     }
     define("CLIENT_ID", $this->client_id);
     define("CLIENT_SECRET", $this->client_secret);
-  }
-
-  public function processTransaction($data)
-  {
-    $params = $this->prepareTransactionParams($data);
-    $Pagadito = new Pagadito();
-    return $Pagadito->createCustomer($params);
-  }
-
-  public function validateProcessCard($data)
-  {
-    $params = $this->prepareTransactionParams($data);
-    $Pagadito = new Pagadito();
-    return $Pagadito->validateProcessCard($params);
-  }
-
-  private function prepareTransactionParams($data)
-  {
-    $cardNumber = $data['cardNumber'];
-    $expiryMonth = $data['expiryMonth'];
-    $expiryYear = $data['expiryYear'];
-    $cvv = $data['cvv'];
-    $holderName = $data['holderName'];
-    $firstName = $data['firstName'];
-    $lastName = $data['lastName'];
-    $email = $data['email'];
-    $phone = $data['phone'];
-    $address_1 = $data['address'];
-    $address_2 = "";
-    $city = $data['city'];
-    $state = $data['state'];
-    $country = $data['country'];
-    $postalCode = $data['postalCode'];
-    $request_id = $data['request_id'];
-    $referenceId = $data['referenceId'];
-    $returnUrl = $data['returnUrl'];
-    $transactionId = $data['TransactionId'];
-
-    $transaction = array(
-      'merchantTransactionId' => $data['mechantReferenceId'],
-      'currencyId' => $data['currency'],
-      'transactionDetails' => array(
-        array(
-          'quantity' => '1',
-          'description' => 'Recarga',
-          'amount' => $data['amount'],
-        ),
-      ),
-    );
-
-    return array(
-      'card' => array(
-        'number' => $cardNumber,
-        'expirationDate' => $expiryMonth . '/' . $expiryYear,
-        'cvv' => $cvv,
-        'cardHolderName' => $holderName,
-        'firstName' => $firstName,
-        'lastName' => $lastName,
-        'billingAddress' => array(
-          'city' => $city,
-          'state' => $state,
-          'zip' => $postalCode,
-          'countryId' => $country,
-          'line1' => $address_1,
-          'line2' => $address_2,
-          'phone' => $phone,
-        ),
-        'email' => $email,
-      ),
-      'transaction' => $transaction,
-      'browserInfo' => array(
-        'deviceFingerprintID' => time(),
-        'customerIp' => $data['ip'],
-      ),
-      'consumerAuthenticationInformation' => array(
-        'setup_request_id'  => $request_id,
-        'referenceId'       => $referenceId,
-        "returnUrl"         => $returnUrl,
-        "transactionId"     => $transactionId ? $transactionId : null
-      )
-    );
+    define("CLIENT_TOKEN", $this->pagadito_token);
+    define("CLIENT_TOKEN_EXPIRATION", $this->token_expiration);
+    $this->Pagadito = new Pagadito();
+    if ($this->Pagadito->getAuthToken() != $this->pagadito_token) {
+      $clientUpdate = new Clients();
+      $data = [
+        'pagadito_token' => $this->Pagadito->getAuthToken(),
+        'token_expiration' => $this->Pagadito->getExpiresToken()
+      ];
+      $clientUpdate->setClientToken($this->client_id, $data);
+    }
   }
 
   public function handleWooCommerce($data)
@@ -225,8 +162,7 @@ class PagaditoHandler
   public function setupPayer($params, $client_id, $ip)
   {
     global $wpdb;
-    $Pagadito = new Pagadito();
-    $res = $Pagadito->setupPayer($params);
+    $res = $this->Pagadito->setupPayer($params);
     $environment = $this->testMode === 'yes' ? 'sandbox' : 'production';
 
     if ($res['pagadito_http_code'] == 200) {
@@ -258,8 +194,7 @@ class PagaditoHandler
 
   public function setCustomer($params)
   {
-    $Pagadito = new Pagadito();
-    $res = $Pagadito->setCustomer($params);
+    $res = $this->Pagadito->setCustomer($params);
     $this->handleSaveData($res, $params['token']);
 
     return $res;
@@ -267,8 +202,7 @@ class PagaditoHandler
 
   public function setValidateCard($params)
   {
-    $Pagadito = new Pagadito();
-    $res = $Pagadito->validateProcessCard($params);
+    $res = $this->Pagadito->validateProcessCard($params);
     $this->handleSaveData($res, $params['token']);
 
     return $res;

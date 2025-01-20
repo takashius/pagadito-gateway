@@ -8,6 +8,7 @@ class Pagadito
     private $debug_mode;
     private $url;
     private $authToken;
+    private $expiresToken;
     protected $curlObj;
     //**************************************************************************
     // </editor-fold>
@@ -23,9 +24,19 @@ class Pagadito
         $this->curlObj = curl_init();
         $this->debug_mode = $debug_mode;
         $this->config();
-
         $token = $this->checkAndGetToken();
-        $this->authToken = $token;
+        $this->authToken = $token['token'];
+        $this->expiresToken = $token['expires'];
+    }
+
+    public function getAuthToken()
+    {
+        return $this->authToken;
+    }
+
+    public function getExpiresToken()
+    {
+        return $this->expiresToken;
     }
 
     public function createCustomer($params)
@@ -100,6 +111,20 @@ class Pagadito
         $this->url = GATEWAY_URL;
     }
 
+    private function checkAndGetToken()
+    {
+        $token = CLIENT_TOKEN;
+        $expires = CLIENT_TOKEN_EXPIRATION;
+        if ($token && $expires) {
+            if (new DateTime($expires) > new DateTime()) {
+                return ['token' => $token, 'expires' => $expires];
+            }
+        }
+        $token = $this->getToken();
+        $this->curlObj = curl_init();
+        return $token;
+    }
+
     private function getToken()
     {
         $url = str_replace("v1/", "", $this->url);
@@ -128,30 +153,13 @@ class Pagadito
         if ($info["http_code"] == 200) {
             $response = json_decode($curl_response, true);
             if (isset($response['token']) && isset($response['expires'])) {
-                file_put_contents('token.txt', $response['token']);
-                file_put_contents('token_expiration.txt', $response['expires']);
-                return $response['token'];
+                return $response;
             } else {
                 throw new Exception('Invalid token response');
             }
         } else {
             throw new Exception('Failed to obtain token, HTTP code: ' . $info["http_code"] . ' => ' . $url);
         }
-    }
-
-
-    private function checkAndGetToken()
-    {
-        if (file_exists('token.txt') && file_exists('token_expiration.txt')) {
-            $token = file_get_contents('token.txt');
-            $expires = file_get_contents('token_expiration.txt');
-            if (new DateTime($expires) > new DateTime()) {
-                return $token;
-            }
-        }
-        $token = $this->getToken();
-        $this->curlObj = curl_init();
-        return $token;
     }
 
     private function parseRequest($formData)
