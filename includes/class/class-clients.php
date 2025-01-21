@@ -73,19 +73,33 @@ class Clients
     return $this->wpdb->affected_rows;
   }
 
-  public function setClientToken($id, $data)
+  public function setClientToken($id, $data, $isTestMode)
   {
-    $query = $this->wpdb->prepare(
-      "UPDATE {$this->table} SET
-        pagadito_token = %s,
-        token_expiration = %s,
-        updated_at = %s
-        WHERE ID = %d",
-      sanitize_text_field($data['pagadito_token']),
-      sanitize_text_field($data['token_expiration']),
-      current_time('mysql'),
-      intval($id)
-    );
+    if ($isTestMode) {
+      $query = $this->wpdb->prepare(
+        "UPDATE {$this->table} SET
+          sandbox_pagadito_token = %s,
+          sandbox_token_expiration = %s,
+          updated_at = %s
+          WHERE ID = %d",
+        sanitize_text_field($data['pagadito_token']),
+        sanitize_text_field($data['token_expiration']),
+        current_time('mysql'),
+        intval($id)
+      );
+    } else {
+      $query = $this->wpdb->prepare(
+        "UPDATE {$this->table} SET
+          pagadito_token = %s,
+          token_expiration = %s,
+          updated_at = %s
+          WHERE ID = %d",
+        sanitize_text_field($data['pagadito_token']),
+        sanitize_text_field($data['token_expiration']),
+        current_time('mysql'),
+        intval($id)
+      );
+    }
 
     $result = $this->wpdb->query($query);
     return $result !== false ? $this->wpdb->rows_affected : 0;

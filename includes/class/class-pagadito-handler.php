@@ -24,14 +24,18 @@ class PagaditoHandler
   private function initializeKeys()
   {
     $this->isAdmin = $this->client->role == 'admin' ? true : false;
-    $this->client_id = $this->client->client_id;
-    $this->client_secret = $this->client->client_secret;
-    $this->pagadito_token = $this->client->pagadito_token;
-    $this->token_expiration = $this->client->token_expiration;
 
     if ($this->testMode === 'yes') {
+      $this->client_id = $this->client->sandbox_client_id;
+      $this->client_secret = $this->client->sandbox_client_secret;
+      $this->pagadito_token = $this->client->sandbox_pagadito_token;
+      $this->token_expiration = $this->client->sandbox_token_expiration;
       define("GATEWAY_URL", "https://sandbox-hub.pagadito.com/api/v1/");
     } else {
+      $this->client_id = $this->client->client_id;
+      $this->client_secret = $this->client->client_secret;
+      $this->pagadito_token = $this->client->pagadito_token;
+      $this->token_expiration = $this->client->token_expiration;
       define("GATEWAY_URL", "https://hub.pagadito.com/api/v1/");
     }
     define("CLIENT_ID", $this->client_id);
@@ -47,7 +51,7 @@ class PagaditoHandler
         'pagadito_token' => $this->Pagadito->getAuthToken(),
         'token_expiration' => $this->Pagadito->getExpiresToken()
       ];
-      $clientUpdate->setClientToken($this->client->ID, $data);
+      $clientUpdate->setClientToken($this->client->ID, $data, $this->testMode);
     }
   }
 
