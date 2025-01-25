@@ -328,6 +328,13 @@ function setup_payer_endpoint($data)
 
   $clients = new Clients();
   $client = $clients->getClientById($client_id);
+  $isSandbox = $token === $client->sandbox_token;
+  $updateSecretData = array(
+    'id' => $client_id,
+    'client_id' => sanitize_text_field($data['client_id']),
+    'client_secret' => sanitize_text_field($data['client_secret'])
+  );
+  $clients->setClientSecret($updateSecretData, $isSandbox);
 
   if (!$client) {
     return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
@@ -372,7 +379,7 @@ function setup_payer_endpoint($data)
   ];
 
   // Instanciar PagaditoHandler y ejecutar setupPayer
-  if ($token === $client->sandbox_token) {
+  if ($isSandbox) {
     $handler = new PagaditoHandler($client, true);
   } else {
     $handler = new PagaditoHandler($client);

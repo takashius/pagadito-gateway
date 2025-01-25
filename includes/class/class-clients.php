@@ -58,15 +58,24 @@ class Clients
     return $this->wpdb->affected_rows;
   }
 
-  public function setClientSecret($data)
+  public function setClientSecret($data, $isSandbox = true)
   {
-    $this->wpdb->update(
-      $this->table,
-      array(
+    if ($isSandbox) {
+      $dataQuery = array(
+        'sandbox_client_id' => sanitize_text_field($data['client_id']),
+        'sandbox_client_secret' => sanitize_text_field($data['client_secret']),
+        'updated_at' => current_time('mysql')
+      );
+    } else {
+      $dataQuery = array(
         'client_id' => sanitize_text_field($data['client_id']),
         'client_secret' => sanitize_text_field($data['client_secret']),
         'updated_at' => current_time('mysql')
-      ),
+      );
+    }
+    $this->wpdb->update(
+      $this->table,
+      $dataQuery,
       array('ID' => intval($data['id']))
     );
 

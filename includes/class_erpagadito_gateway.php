@@ -49,9 +49,6 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
     $this->title = $this->get_option('title');
     $this->description = $this->get_option('description');
     $this->enabled = $this->get_option('enabled');
-    $this->testmode = 'yes' === $this->get_option('testmode');
-    $this->private_key = $this->testmode ? $this->get_option('test_private_key') : $this->get_option('private_key');
-    $this->publishable_key = $this->testmode ? $this->get_option('test_publishable_key') : $this->get_option('publishable_key');
 
     // This action hook saves the settings
     add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -124,10 +121,10 @@ class WC_Er_Pagadito_Gateway extends WC_Payment_Gateway
     // ok, let's display some description before the payment form
     if ($this->description) {
       // you can instructions for test mode, I mean test card numbers etc.
-      if ($this->testmode) {
-        $this->description .= ' TEST MODE ENABLED. In test mode, you can use the card numbers listed in <a href="#">documentation</a>.';
-        $this->description  = trim($this->description);
-      }
+      // if ($this->testmode) {
+      //   $this->description .= ' TEST MODE ENABLED. In test mode, you can use the card numbers listed in <a href="#">documentation</a>.';
+      //   $this->description  = trim($this->description);
+      // }
       // display the description with <p> tags etc.
       echo wpautop(wp_kses_post($this->description));
     }
