@@ -326,6 +326,10 @@ function setup_payer_endpoint($data)
     return new WP_REST_Response(array('message' => 'Token inválido o expirado'), 401);
   }
 
+  if (!$data['client_id'] || !$data['client_secret']) {
+    return new WP_REST_Response(array('message' => 'Credenciales invalidas'), 401);
+  }
+
   $clients = new Clients();
   $client = $clients->getClientById($client_id);
   $isSandbox = $token === $client->sandbox_token;

@@ -55,7 +55,7 @@ class Clients
       array('ID' => intval($id))
     );
 
-    return $this->wpdb->affected_rows;
+    return true;
   }
 
   public function setClientSecret($data, $isSandbox = true)
@@ -79,7 +79,7 @@ class Clients
       array('ID' => intval($data['id']))
     );
 
-    return $this->wpdb->affected_rows;
+    return true;
   }
 
   public function setClientToken($id, $data, $isTestMode)

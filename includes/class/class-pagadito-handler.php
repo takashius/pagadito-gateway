@@ -43,7 +43,12 @@ class PagaditoHandler
     define("CLIENT_TOKEN", $this->pagadito_token);
     define("CLIENT_TOKEN_EXPIRATION", $this->token_expiration);
 
-    $this->Pagadito = new Pagadito();
+    try {
+      $this->Pagadito = new Pagadito();
+    } catch (Exception $e) {
+      echo 'Error: ',  $e->getMessage(), "\n";
+      exit();
+    }
 
     if ($this->Pagadito->getAuthToken() != $this->pagadito_token) {
       $clientUpdate = new Clients();
