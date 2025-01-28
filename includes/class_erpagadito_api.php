@@ -339,6 +339,7 @@ function setup_payer_endpoint($data)
     'client_secret' => sanitize_text_field($data['client_secret'])
   );
   $clients->setClientSecret($updateSecretData, $isSandbox);
+  $client = $clients->getClientById($client_id);
 
   if (!$client) {
     return new WP_REST_Response(array('message' => 'Cliente no encontrado'), 404);
