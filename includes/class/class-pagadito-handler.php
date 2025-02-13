@@ -176,29 +176,42 @@ class PagaditoHandler
     $res = $this->Pagadito->setupPayer($params);
     $environment = $this->testMode === 'yes' ? 'sandbox' : 'production';
 
-    if ($res['pagadito_http_code'] == 200) {
-      $order_data = [
-        'client_id' => $client_id,
-        'amount' => $params['transaction']['transactionDetails'][0]['amount'],
-        'currency' => $params['transaction']['currencyId'],
-        'merchantReferenceId' => $params['transaction']['merchantTransactionId'],
-        'firstName' => $params['card']['firstName'],
-        'lastName' => $params['card']['lastName'],
-        'ip' => $ip,
-        'cod_country' => $params['card']['billingAddress']['countryId'],
-        'environment' => $environment,
-        'token' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['token'] : $res['pagadito_response']['token'],
-        'request_id' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_id'] : $res['pagadito_response']['request_id'],
-        'referenceId' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['referenceId'] : $res['pagadito_response']['referenceId'],
-        'email' => $params['card']['email'],
-        'origin' => $this->isAdmin ? 'web' : 'api',
-        'phone' => $params['card']['billingAddress']['phone'],
-        'address' => $params['card']['billingAddress']['line1'],
-        'city' => $params['card']['billingAddress']['city'],
-        'postalCode' => $params['card']['billingAddress']['zip']
-      ];
-      $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $order_data);
+    $token = "";
+    $request_id = "";
+    $referenceId = "";
+
+    if (isset($res['pagadito_response']['data'])) {
+      $data = $res['pagadito_response']['data'];
+      $token = $data['token'];
+      $request_id = $data['request_id'];
+      $referenceId = $data['referenceId'];
+    } else {
+      $token = isset($res['pagadito_response']['token']) ? $res['pagadito_response']['token'] : '';
+      $request_id = isset($res['pagadito_response']['request_id']) ? $res['pagadito_response']['request_id'] : '';
+      $referenceId = isset($res['pagadito_response']['referenceId']) ? $res['pagadito_response']['referenceId'] : '';
     }
+
+    $order_data = [
+      'client_id' => $client_id,
+      'amount' => $params['transaction']['transactionDetails'][0]['amount'],
+      'currency' => $params['transaction']['currencyId'],
+      'merchantReferenceId' => $params['transaction']['merchantTransactionId'],
+      'firstName' => $params['card']['firstName'],
+      'lastName' => $params['card']['lastName'],
+      'ip' => $ip,
+      'cod_country' => $params['card']['billingAddress']['countryId'],
+      'environment' => $environment,
+      'token' => $token,
+      'request_id' => $request_id,
+      'referenceId' => $referenceId,
+      'email' => $params['card']['email'],
+      'origin' => $this->isAdmin ? 'web' : 'api',
+      'phone' => $params['card']['billingAddress']['phone'],
+      'address' => $params['card']['billingAddress']['line1'],
+      'city' => $params['card']['billingAddress']['city'],
+      'postalCode' => $params['card']['billingAddress']['zip']
+    ];
+    $wpdb->insert($wpdb->prefix . "er_pagadito_operations", $order_data);
 
     return $res;
   }
