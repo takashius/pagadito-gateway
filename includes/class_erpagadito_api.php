@@ -351,6 +351,17 @@ function setup_payer_endpoint($data)
     $mechantReferenceId = $client->abbr_name . '-' . $data['mechantReferenceId'];
   }
 
+  $validateData = validateSaveProductRequest($data);
+  if (count($validateData) > 0) {
+    return new WP_REST_Response(
+      array(
+        "pagadito_http_code" => 400,
+        "pagadito_response" => $validateData
+      ),
+      400
+    );
+  }
+
   $params = [
     "card" => [
       "number" => sanitize_text_field($data['cardNumber']),
