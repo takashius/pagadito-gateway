@@ -10,8 +10,7 @@ function validateSaveProductRequest($data)
   // Validar campos requeridos
   $required_fields = [
     'cardNumber',
-    'expiryMonth',
-    'expiryYear',
+    'expirationDate',
     'cvv',
     'holderName',
     'firstName',
@@ -35,12 +34,6 @@ function validateSaveProductRequest($data)
   // Validaciones específicas para cada campo
   if (!is_numeric($data['cardNumber']) || strlen($data['cardNumber']) != 16) {
     $messages['cardNumber'] = 'El número de tarjeta es inválido.';
-  }
-  if (!is_numeric($data['expiryMonth']) || strlen($data['expiryMonth']) != 2) {
-    $messages['expiryMonth'] = 'El formato de mes es inválido.';
-  }
-  if (!is_numeric($data['expiryYear']) || strlen($data['expiryYear']) != 4) {
-    $messages['expiryYear'] = 'El formato de año es inválido.';
   }
   if (!is_numeric($data['cvv']) || strlen($data['cvv']) != 3) {
     $messages['cvv'] = 'El código de seguridad de la tarjeta es inválido.';
