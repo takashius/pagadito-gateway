@@ -118,14 +118,33 @@ class PagaditoHandler
         $updateSymbol = ['%d', '%s', '%s', '%s', '%s'];
       }
     } else {
+      $response_code = '';
+      $response_message = '';
+      $request_date = '';
+      if (isset($res['pagadito_response']['data']) && isset($res['pagadito_response']['data']['response_code'])) {
+        $response_code = $res['pagadito_response']['data']['response_code'];
+      } else if (isset($res['pagadito_response']['response_code'])) {
+        $response_code = $res['pagadito_response']['response_code'];
+      }
+      if (isset($res['pagadito_response']['data']) && isset($res['pagadito_response']['data']['response_message'])) {
+        $response_message = $res['pagadito_response']['data']['response_message'];
+      } else if (isset($res['pagadito_response']['response_message'])) {
+        $response_message = $res['pagadito_response']['response_message'];
+      }
+      if (isset($res['pagadito_response']['data']) && isset($res['pagadito_response']['data']['request_date'])) {
+        $request_date = $res['pagadito_response']['data']['request_date'];
+      } else if (isset($res['pagadito_response']['request_date'])) {
+        $request_date = $res['pagadito_response']['request_date'];
+      }
       $update_data = array(
         'http_code' => $res['pagadito_http_code'],
-        'response_code' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_code'] : $res['pagadito_response']['response_code'],
-        'response_message' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['response_message'] : $res['pagadito_response']['response_message'],
-        'request_date' => isset($res['pagadito_response']['data']) ? $res['pagadito_response']['data']['request_date'] : $res['pagadito_response']['request_date']
+        'response_code' => $response_code,
+        'response_message' => $response_message,
+        'request_date' => $request_date
       );
       $updateSymbol = ['%d', '%s', '%s', '%s'];
     }
+    $wpdb->query('START TRANSACTION');
 
     $where = array(
       'token' => $token
@@ -139,10 +158,17 @@ class PagaditoHandler
       array('%s')
     );
 
-    $query = $wpdb->prepare("SELECT * FROM {$wpdb->prefix}er_pagadito_operations WHERE token = %s", $token);
-    $updated_record = $wpdb->get_row($query, ARRAY_A);
-    if (!$this->isAdmin) {
+    if (!$this->isAdmin && $res['pagadito_http_code'] === 200) {
+      $query = $wpdb->prepare("SELECT 'ID', 'client_id', 'amount', 'currency', 'cod_country', 
+      'merchantReferenceId', 'firstName', 'lastName', 'email', 'phone', 'address', 'city', 
+      'postalCode', 'ip', 'request_id', 'referenceId', 'authorization', 'http_code', 'response_code', 
+      'response_message', 'request_date', 'paymentDate', 'environment', 'origin', 'token', 'date' 
+      FROM {$wpdb->prefix}er_pagadito_operations WHERE token = %s", $token);
+      $updated_record = $wpdb->get_row($query, ARRAY_A);
+      $wpdb->query('COMMIT');
       $this->handleWooCommerce($updated_record);
+    } else {
+      $wpdb->query('COMMIT');
     }
   }
 
