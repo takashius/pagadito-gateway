@@ -158,7 +158,8 @@ class Pagadito
                 throw new Exception('Invalid token response');
             }
         } else {
-            throw new Exception('Failed to obtain token, HTTP code: ' . $info["http_code"] . ' => ' . $url);
+            $error_message = 'HTTP code: ' . $info["http_code"] . ' Message: ' . $curl_response;
+            throw new Exception('Failed to obtain token, ' . $error_message);
         }
     }
 
